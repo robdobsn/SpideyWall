@@ -1,0 +1,28 @@
+
+[indentation]
+indent_width=4
+indent_type=1
+indent_hard_tab_width=8
+detect_indent=false
+indent_mode=2
+
+[project]
+name=SpideywallCpp
+base_path=/home/pi/spideywall/SpideywallCpp/
+description=
+
+[long line marker]
+long_line_behaviour=1
+long_line_column=72
+
+[files]
+current_page=0
+FILE_NAME_0=0;C++;0;16;1;1;0;/home/pi/spideywall/SpideywallCpp/spideywall.cxx;0
+FILE_NAME_1=0;C++;0;16;1;1;0;/home/pi/spideywall/SpideywallCpp/ledstrip.cxx;0
+FILE_NAME_2=244;C++;0;16;1;1;0;/home/pi/spideywall/SpideywallCpp/ledstrip.hxx;0
+FILE_NAME_3=0;C++;0;16;1;1;0;/home/pi/spideywall/SpideywallCpp/LED.hxx;0
+
+[build-menu]
+EX_00_LB=_Execute
+EX_00_CM=sudo "./%e"
+EX_00_WD=

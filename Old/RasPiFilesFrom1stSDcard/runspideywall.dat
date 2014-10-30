@@ -1,0 +1,34 @@
+#!/bin/sh
+### BEGIN INIT INFO
+# Provides:          runspideywall
+# Required-Start:    $local_fs
+# Required-Stop:     $local_fs
+# Default-Start:     2 3 4 5
+# Default-Stop:      0 1 6
+# Short-Description: Start/stop spideywall
+### END INIT INFO
+ 
+# More details see evernote
+ 
+### Customize this entry
+# Set the USER variable to the name of the user to start spidewall under
+export USER='pi'
+### End customization required
+ 
+eval cd ~$USER
+ 
+case "$1" in
+  start)
+    sudo sleep 10
+    sudo '/home/pi/spideywall/spideywall'
+    echo "Starting spideywall"
+    ;;
+  stop)    
+    echo "spideywall stopped"
+    ;;
+  *)
+    echo "Usage: /etc/init.d/runspideywall {start|stop}"
+    exit 1
+    ;;
+esac
+exit 0

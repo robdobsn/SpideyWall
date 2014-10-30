@@ -1,0 +1,35 @@
+from time import sleep
+import socket
+
+PORT = 7
+
+SERVER_ADDRESS = "192.168.0.116"
+
+s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM) 
+s.setblocking(0)
+
+cmdmsg = bytearray.fromhex("050410000800")
+s.sendto(cmdmsg, (SERVER_ADDRESS, PORT))
+sleep(0.3)
+
+for g in range (37):
+
+    cmdmsg = bytearray.fromhex("0101")
+    s.sendto(cmdmsg, (SERVER_ADDRESS, PORT))
+
+    sleep(0.3)
+
+    cmdmsg = bytearray.fromhex("080200000050a75ef2")
+    s.sendto(cmdmsg, (SERVER_ADDRESS, PORT))    
+
+    cmdmsg = bytearray.fromhex("080201000050ff5c7e")
+    s.sendto(cmdmsg, (SERVER_ADDRESS, PORT))
+
+    cmdmsg = bytearray.fromhex("0802020000505c7e68")
+    s.sendto(cmdmsg, (SERVER_ADDRESS, PORT))
+
+    cmdmsg = bytearray.fromhex("0802030000507e0067")
+    s.sendto(cmdmsg, (SERVER_ADDRESS, PORT))
+
+    sleep(0.3)
+    

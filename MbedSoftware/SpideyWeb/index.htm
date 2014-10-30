@@ -1,0 +1,142 @@
+﻿<!DOCTYPE html> 
+<html> 
+	<head>
+	<title>LightWall</title> 
+	<meta name="viewport" content="width=device-width, initial-scale=1"> 
+    <script type="text/javascript">
+        function callAjax(url, callback)
+        {
+            var xmlhttp;
+            // code for IE7+, Firefox, Chrome, Opera, Safari
+            xmlhttp = new XMLHttpRequest();
+            xmlhttp.onreadystatechange = function() 
+            {
+                if (xmlhttp.readyState == 4 && xmlhttp.status == 200)
+                {
+                    callback(xmlhttp.responseText);
+                }
+            }
+
+            xmlhttp.open("GET", url, true);
+            xmlhttp.send();
+        }
+        function ajaxCallback()
+        {
+        }
+    </script>
+    <style>
+        body {
+            font-family: Helvetica;
+            line-height: 1.4em;
+            font-size:12pt; 
+            }
+        .layout { display:table; width: 100%; margin:0; }
+        .pg-hd { background-color: #00344c; display: block; }
+        .hd-txt { padding: 10px; color: White; vertical-align: middle; text-align:center; }
+        .hd-com
+        {
+            float: right;
+            height:0;
+            width:0;
+        }
+        .hd-ico
+        {
+            position: relative;
+            top: -37px;
+            left: -60px;
+        }
+        .hd-com a
+        {
+            background: transparent url('gear-gr.png') no-repeat;                
+            padding: 30px;
+        }
+        .lk-hd
+        {
+            color: #fff;
+            background-color: #8898aB !important;
+            display: table-cell;
+            width: 20%;
+            border-bottom: 1px solid #666;
+            text-align:center;
+            vertical-align: middle;
+            border-right: 1px solid #666;
+        }
+        .lk-hd:last-child 
+        {
+            border-right: none !important;
+        }
+        .lk-5x 
+        {
+            color: #315D96;
+            background-color: #e6ebf0 !important;
+            background: -webkit-gradient(linear, center top, center bottom, color-stop(0, #E6E8EC), color-stop(0.5, #E6E8EC), color-stop(1, #98a0b0)) !important;
+            background: -moz-linear-gradient(top, #E6E8EC 0%, #E6E8EC 50%, #98a0b0 100%) !important;
+            background: linear-gradient(to bottom, #E6E8EC 0%, #E6E8EC 50%, #98a0b0 100%) !important;
+            display: table-cell;
+            width: 20%;
+            border-bottom: 1px solid #666;
+            text-align:center;
+            vertical-align: middle;
+            border-right: 1px solid #666;
+        }
+        .lk-5x:last-child 
+        {
+            border-right: none !important;
+        }
+        .lk-5x a
+        {
+            color: #315D96;
+            font-weight: bold;
+        }
+        .up-ico a, .st-ico a, .dn-ico a 
+        {
+            display: block;
+            vertical-align: middle;
+            text-decoration:none;
+            padding: 25px 0 25px 0;
+            font-size: 150%;
+        }
+        .hd-lin
+        {
+            display: block;
+            vertical-align: middle;
+            text-decoration:none;
+            font-size: 150%;
+            font-weight: bold;
+            padding: 30px 0 30px 0;
+        }
+        .un-pad {
+            padding: 2px;
+            }
+    </style>
+</head> 
+<body> 
+
+<div>
+
+	<div class="layout">
+        <div class="pg-hd">
+            <div class="hd-txt">
+		        <h1>Light Wall</h1>
+            </div>
+        </div>
+	</div><!-- /header -->
+        <div class="layout">
+            <div class="lk-hd">
+                <div class="un-pad"><div class="un_head_icon"><div><div class="hd-lin">Lights</div></div></div></div>
+            </div>
+        </div>
+        <div class="layout">
+            <div class="lk-5x">
+                <div class="un-pad"><div class="cell up-ico"><a href="#" onclick="callAjax('/cmd/smooth',ajaxCallback)">Smooth</a></div></div>
+            </div>
+        </div>
+        <div class="layout">
+            <div class="lk-5x">
+                <div class="un-pad"><div class="cell up-ico"><a href="#" onclick="callAjax('/cmd/snake',ajaxCallback)">Snake</a></div></div>
+            </div>
+        </div>
+</div>
+
+</body>
+</html>
