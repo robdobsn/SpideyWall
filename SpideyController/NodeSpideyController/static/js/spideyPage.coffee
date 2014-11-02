@@ -65,21 +65,16 @@ initSpidey = ->
 	return
 
 showSpideyLeds = ->
-	window.spideyDrawing.padLeds = window.spideyDrawing.d3PadsSvg.selectAll("g.padLeds")
-		.data(window.spideyGeom.pads)
+	window.spideyDrawing.ledsSel = window.spideyDrawing.d3PadsSvg.selectAll("g.led")
+		.data(window.spideyGeom.leds)
 		.enter()
 		.append("g")
-		.attr("class","padLeds")
-
-	window.spideyDrawing.ledsSel = window.spideyDrawing.padLeds.selectAll(".led")
-		.data( (d,i) -> return d.leds )
-		.enter()
-		.append("circle")
 	 	.attr("class", "led")
-	 	.attr("cx", (d) -> return window.spideyGeom.leds[d.ledIdx].centre.x )
-	 	.attr("cy", (d) -> return window.spideyGeom.leds[d.ledIdx].centre.y )
+		.append("circle")
+	 	.attr("cx", (d) -> return d.centre.x )
+	 	.attr("cy", (d) -> return d.centre.y )
 	 	.attr("r", window.spideyDrawing.ledUISize)
-	 	.attr("fill", (d,i) -> return window.spideyGeom.leds[d.ledIdx].colour)
+	 	.attr("fill", (d,i) -> return d.colour)
 
 loadSpideyGeom = ->
 	jqXHR = $.getJSON "/SpideyGeometry.json", (data) ->
@@ -146,8 +141,19 @@ spideySaveScript = ->
 
 spideyRunScript = ->
 	code = window.editor.getSession().getValue()
-	eval code	
+	eval code
+	d3.timer(draw)
 	return
 
 show = ->
 	window.spideyDrawing.ledsSel.attr("fill", (d) -> return d.colour)
+
+random = (min, max) ->
+	if max?
+		return Math.floor(Math.random() * (max - min)) + min
+	max = min
+	min = 0
+	return Math.floor(Math.random() * (max - min)) + min
+
+rgbColour = (r,g,b) ->
+	return "rgb(" + r + "," + g + "," + b + ")"
