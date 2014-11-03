@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Joe's Spidey Wall</title>
     <link rel="stylesheet" href="css/foundation.css" />
+    <link rel="stylesheet" href="css/app.css" />
     <script src="js/vendor/modernizr.js"></script>
     <link rel="stylesheet" href="css/spidey.css" />
     <link href='http://fonts.googleapis.com/css?family=Monoton' rel='stylesheet' type='text/css'>
@@ -20,10 +21,10 @@
     </div>
 
     <div class="row">
-      <div class="large-7 columns spideySvgImg">
+      <div class="large-6 columns spideySvgImg">
       </div>
     
-      <div class="large-5 columns">
+      <div class="large-6 columns">
         <div class="row spidey-scripts">
           <div id="block-system-main" class="block block-system">
             <!--------=== Patterns ===-------->
@@ -44,8 +45,10 @@
         <div id="editor">
         </div>
         <div class="row">
-          <a onclick="spideyRunScript();" class="small round button spidey-save-script">Run</a>
+          <a onclick="spideyRunScript();" class="small round button spidey-run-script">Run</a>
+          <a onclick="spideyStopScript();" class="small round button spidey-stop-script">Stop</a>
           <a onclick="spideySaveScript();" class="small round button spidey-save-script">Save</a>
+          <a onclick="spideyCloseScript();" class="small round button spidey-close-script">Close</a>
           <a onclick="spideyNewScript();" class="small round button spidey-new-script">New</a>
         </div>
       </div>

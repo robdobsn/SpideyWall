@@ -32,6 +32,8 @@ editScript = (scriptId) ->
 
 deleteScript = (scriptId) ->
 	console.log "delete script " + scriptId
+	if not confirm("Delete script?")
+		return
 	$.ajax "/scripts/" + scriptId , 
 		type: "DELETE"
 		error: (jqXHR, textStatus, errorThrown) ->
@@ -71,8 +73,8 @@ showSpideyLeds = ->
 		.append("g")
 	 	.attr("class", "led")
 		.append("circle")
-	 	.attr("cx", (d) -> return d.centre.x )
-	 	.attr("cy", (d) -> return d.centre.y )
+	 	.attr("cx", (d) -> return d.x )
+	 	.attr("cy", (d) -> return d.y )
 	 	.attr("r", window.spideyDrawing.ledUISize)
 	 	.attr("fill", (d,i) -> return d.colour)
 
@@ -91,6 +93,9 @@ loadSpideyGeom = ->
 
 showScriptList = ->
 	$(".spidey-new-script").show()
+	$(".spidey-run-script").hide()
+	$(".spidey-stop-script").hide()
+	$(".spidey-close-script").hide()
 	$(".spidey-scripts").show()
 	$("#editor").hide()
 	$(".script-name").hide()
@@ -103,6 +108,9 @@ spideyNewScript = ->
 
 spideyShowScript = (scriptName, scriptCode) ->
 	$(".spidey-new-script").hide()
+	$(".spidey-run-script").show()
+	$(".spidey-stop-script").show()
+	$(".spidey-close-script").show()
 	$(".spidey-scripts").hide()
 	$("#editor").show()
 	$(".script-name").show()
@@ -113,6 +121,9 @@ spideyShowScript = (scriptName, scriptCode) ->
 		name: scriptName
 		code: scriptCode
 	$(".spidey-save-script").show()
+	window.spideyScriptChanged = false
+	window.editor.on "change", ->
+		window.spideyScriptChanged = true
 	return
 
 spideySaveScript = ->
@@ -142,8 +153,28 @@ spideySaveScript = ->
 spideyRunScript = ->
 	code = window.editor.getSession().getValue()
 	eval code
-	d3.timer(draw)
+	window.d3TimerStop = false
+	d3.timer(spideyDrawFunction)
 	return
+
+spideyStopScript = ->
+	window.d3TimerStop = true
+	return
+
+spideyDrawFunction = ->
+	if window.d3TimerStop
+		return true
+	draw()
+	return false
+
+spideyCloseScript = ->
+	if window.spideyScriptChanged
+		if confirm('Discard changes?')
+			showScriptList()
+		else
+			return
+	else
+		showScriptList()
 
 show = ->
 	window.spideyDrawing.ledsSel.attr("fill", (d) -> return d.colour)
@@ -157,3 +188,4 @@ random = (min, max) ->
 
 rgbColour = (r,g,b) ->
 	return "rgb(" + r + "," + g + "," + b + ")"
+
