@@ -90,6 +90,21 @@ loadSpideyGeom = ->
 		window.spideyDrawing.padOutlines = window.spideyDrawing.d3PadsSvg.selectAll("path");
 		showSpideyLeds()
 		window.LEDS = window.spideyGeom.leds
+		for led in window.LEDS
+			led.dist = (pt) ->
+				window.dist(pt, this)
+		window.LEDS.closest = (pt) ->
+			curClosest = null
+			curMinDist = 1000000
+			for led in this
+				thisDist = led.dist(pt)
+				if curMinDist > thisDist
+					curMinDist = thisDist
+					curClosest = led
+			return curClosest
+
+window.dist = (pt1, pt2) ->
+	return Math.sqrt(Math.pow(pt1.x - pt2.x, 2) + Math.pow(pt1.y - pt2.y, 2))
 
 showScriptList = ->
 	$(".spidey-new-script").show()
@@ -188,4 +203,5 @@ random = (min, max) ->
 
 rgbColour = (r,g,b) ->
 	return "rgb(" + r + "," + g + "," + b + ")"
+
 

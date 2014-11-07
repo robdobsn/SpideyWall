@@ -86,7 +86,7 @@ showSpideyLeds = function() {
 loadSpideyGeom = function() {
   var jqXHR;
   return jqXHR = $.getJSON("/SpideyGeometry.json", function(data) {
-    var led, _i, _len, _ref;
+    var led, _i, _j, _len, _len1, _ref, _ref1;
     window.spideyGeom = data;
     console.log("LoadedSpideyGeom");
     _ref = window.spideyGeom.leds;
@@ -100,8 +100,33 @@ loadSpideyGeom = function() {
     window.spideyDrawing.d3PadsSvg = d3.select(".spideySvgImg svg");
     window.spideyDrawing.padOutlines = window.spideyDrawing.d3PadsSvg.selectAll("path");
     showSpideyLeds();
-    return window.LEDS = window.spideyGeom.leds;
+    window.LEDS = window.spideyGeom.leds;
+    _ref1 = window.LEDS;
+    for (_j = 0, _len1 = _ref1.length; _j < _len1; _j++) {
+      led = _ref1[_j];
+      led.dist = function(pt) {
+        return window.dist(pt, this);
+      };
+    }
+    return window.LEDS.closest = function(pt) {
+      var curClosest, curMinDist, thisDist, _k, _len2;
+      curClosest = null;
+      curMinDist = 1000000;
+      for (_k = 0, _len2 = this.length; _k < _len2; _k++) {
+        led = this[_k];
+        thisDist = led.dist(pt);
+        if (curMinDist > thisDist) {
+          curMinDist = thisDist;
+          curClosest = led;
+        }
+      }
+      return curClosest;
+    };
   });
+};
+
+window.dist = function(pt1, pt2) {
+  return Math.sqrt(Math.pow(pt1.x - pt2.x, 2) + Math.pow(pt1.y - pt2.y, 2));
 };
 
 showScriptList = function() {
