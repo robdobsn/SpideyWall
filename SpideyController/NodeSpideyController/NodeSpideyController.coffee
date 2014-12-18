@@ -1,6 +1,8 @@
 
 # test using http://localhost:5078/rawcmd/01010b0200010001ff0000ff0000
 
+# On Mac start mongo with mongod --config /usr/local/etc/mongod.conf
+
 http = require('http')
 express = require('express')
 bodyParser = require('body-parser')
@@ -13,16 +15,23 @@ ObjectID = require('mongodb').ObjectID
 spidey_UDP_IP = "192.168.0.227"
 spidey_UDP_port = 7
 
-mongoDbUri = 'mongodb://macallan:27017/SpideyWall'
+SPIDEY_WEBSERVER_PORT = 5078
 
-console.log spideyUdp
+mongoDbUri = 'mongodb://macallan:27017/SpideyWall'
+args = process.argv.slice(2)
+if args[0]?
+	mongoDbUri = "mongodb://#{args[0]}:27017/SpideyWall"
+
+console.log "Spidey Wall Web Server on Port #{SPIDEY_WEBSERVER_PORT} - using #{mongoDbUri}"
+
+# console.log spideyUdp
 
 # Spidey UDP is the controller for the spidey wall
 spidey = new spideyUdp.SpideyUDP(spidey_UDP_IP, spidey_UDP_port)
 
 # Express is the web server
 app = express()
-app.set 'port', process.env.PORT || 5078    # Arbitrarily chosen port number
+app.set 'port', process.env.PORT || SPIDEY_WEBSERVER_PORT    # Arbitrarily chosen port number
 app.set 'views', path.join(__dirname, 'views')
 app.set 'view engine', 'jade'
 
@@ -119,9 +128,12 @@ app.delete '/scripts/:id', (req, res) ->
 # 	filePath = path.join(__dirname, '../public', 'index1.html')
 # 	res.sendFile "index.html"
 
+cmdCount = 0
 app.get '/rawcmd/:spideycommand', (req, res) ->
 	spideycommand = req.params.spideycommand
 	spidey.execCmd spideycommand
+	# console.log "RAWCMD count = " + (cmdCount)
+	cmdCount++
 	res.send "ok"
 
 app.use (req,res) ->

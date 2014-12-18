@@ -1,0 +1,12 @@
+{
+  "name": "NodeSpideyController",
+  "version": "0.0.1",
+  "private": true,
+  "dependencies": {
+    "dgram":"*",
+    "express": "*",
+    "jade": "*",
+    "mongodb":"*",
+    "JSON":"*"
+  }
+}

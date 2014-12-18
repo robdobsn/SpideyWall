@@ -44,12 +44,7 @@
         </div>
         <div id="editor">
         </div>
-        <div class="row">
-          <a onclick="spideyRunScript();" class="small round button spidey-run-script">Run</a>
-          <a onclick="spideyStopScript();" class="small round button spidey-stop-script">Stop</a>
-          <a onclick="spideySaveScript();" class="small round button spidey-save-script">Save</a>
-          <a onclick="spideyCloseScript();" class="small round button spidey-close-script">Close</a>
-          <a onclick="spideyNewScript();" class="small round button spidey-new-script">New</a>
+        <div class="row script-button-row">
         </div>
       </div>
     </div>
@@ -308,9 +303,14 @@
     <script src="js/foundation.min.js" type="text/javascript"></script>
     <script src="js/d3.v3.min.js" type="text/javascript"></script>
     <script src="ace-builds/src-noconflict/ace.js" type="text/javascript" charset="utf-8"></script>
-    <script src="js/spideyPage.js"></script>
+    <script src="js/color-conversions.js"></script>
+    <script src="js/color-string.js"></script>
+    <script src="js/ScriptManager.js"></script>
+    <script src="js/DisplayManager.js"></script>
+    <script src="js/ScriptHelpers.js"></script>
     <script>
-      initSpidey();
+      window.displayManager = new DisplayManager();
+      window.scriptManager = new ScriptManager(window.displayManager);
       $(document).foundation();
     </script>
 
