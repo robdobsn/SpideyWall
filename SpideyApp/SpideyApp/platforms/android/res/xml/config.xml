@@ -1,0 +1,13 @@
+<?xml version='1.0' encoding='utf-8'?>
+<widget id="com.robdobsn.spideywall" version="0.0.1" xmlns="http://www.w3.org/ns/widgets" xmlns:cdv="http://cordova.apache.org/ns/1.0">
+    <preference name="loglevel" value="DEBUG" />
+    <name>SpideyApp</name>
+    <description>
+        Spidey Wall App
+    </description>
+    <author email="rob@dobson.com" href="http://robdobson.com">
+        Rob Dobson
+    </author>
+    <content src="index.html" />
+    <access origin="*" />
+</widget>
