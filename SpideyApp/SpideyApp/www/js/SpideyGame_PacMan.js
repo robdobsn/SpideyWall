@@ -13,6 +13,7 @@ SpideyGame_PacMan = (function(_super) {
     this.spideyAppUI = spideyAppUI;
     this.testStart = __bind(this.testStart, this);
     this.stepTest = __bind(this.stepTest, this);
+    this.directionCallback = __bind(this.directionCallback, this);
     this.step = __bind(this.step, this);
     this.exitClick = __bind(this.exitClick, this);
     SpideyGame_PacMan.__super__.constructor.call(this, "PacMan", "pacman.svg");
@@ -22,18 +23,24 @@ SpideyGame_PacMan = (function(_super) {
   }
 
   SpideyGame_PacMan.prototype.go = function() {
-    this.spideyAppUI.addButton("red", this.exitClick, "exit", "exit", "exit", "appbar.cancel.svg", 50, 50, "#gamebuttons", 1);
-    this.spideyAppUI.showGamePad(200, 100);
-    this.testStart();
+    this.spideyAppUI.addButton("red", this.exitClick, "exit", "exit", "exit", "appbar.cancel.svg", 50, 50, "#gamebuttons", 100);
+    this.spideyAppUI.showGamePad(200, 100, this.directionCallback, true);
+    this.gameTimer = setInterval(this.step, 100);
   };
 
   SpideyGame_PacMan.prototype.exitClick = function() {
-    this.testEnd();
+    clearInterval(this.gameTimer);
     return this.spideyApp.exitGame();
   };
 
   SpideyGame_PacMan.prototype.showSprites = function() {
+    var actor, _i, _len, _ref;
     this.spideyWall.preShowAll();
+    _ref = this.baddies;
+    for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+      actor = _ref[_i];
+      actor.show();
+    }
     this.me.show();
     this.spideyWall.showAll();
   };
@@ -49,7 +56,15 @@ SpideyGame_PacMan = (function(_super) {
     this.showSprites();
   };
 
+  SpideyGame_PacMan.prototype.directionCallback = function(param) {
+    return this.changeDirection(param);
+  };
+
   SpideyGame_PacMan.prototype.mouseover = function(dirn) {
+    return this.changeDirection(dirn);
+  };
+
+  SpideyGame_PacMan.prototype.changeDirection = function(dirn) {
     if (dirn === "forward" || dirn === "back") {
       this.me.curDirection.move = dirn;
       this.me.curDirection.turn = "none";

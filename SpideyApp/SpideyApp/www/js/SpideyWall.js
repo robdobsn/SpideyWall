@@ -2,7 +2,10 @@
 var SpideyWall;
 
 SpideyWall = (function() {
-  function SpideyWall() {}
+  function SpideyWall(debugCanvas) {
+    this.debugCanvas = debugCanvas;
+    this.spideyGeometry = window.SpideyGeometry;
+  }
 
   SpideyWall.prototype.d2h = function(d) {
     return d.toString(16);
@@ -23,7 +26,6 @@ SpideyWall = (function() {
   };
 
   SpideyWall.prototype.execSpideyCmd = function(cmdParams) {
-    console.log("Sending " + cmdParams);
     return $.ajax(cmdParams, {
       type: "GET",
       dataType: "text",
@@ -39,82 +41,128 @@ SpideyWall = (function() {
   };
 
   SpideyWall.prototype.sendLedCmd = function(ledChainIdx, ledclr) {
-    var clrStr;
-    clrStr = ledclr === "white" ? "000000" : "800000";
-    if (ledclr !== "white") {
-      this.ipCmdBuf += "000802" + this.zeropad(this.d2h(ledChainIdx), 4) + "0001" + clrStr;
+    var clrStr, led;
+    clrStr = ledclr === "green" ? "00ff00" : "ff0000";
+    this.ipCmdBuf += "000802" + this.zeropad(this.d2h(ledChainIdx), 4) + "0001" + clrStr;
+    if (this.debugCanvas != null) {
+      led = this.spideyGeometry.leds[ledChainIdx];
+      this.debugCanvas.fillStyle = ledclr;
+      this.debugCanvas.fillRect(led.x, led.y, 3, 3);
     }
-  };
-
-  SpideyWall.prototype.setNodeColour = function(nodeIdx, disp, colour) {
-    var dbg, node, nodeLed, _i, _len, _ref;
-    node = this.spideyGraph.nodeList[nodeIdx];
-    dbg = "";
-    _ref = node.leds;
-    for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-      nodeLed = _ref[_i];
-      if (disp) {
-        nodeLed.led.clr = colour;
-      } else {
-        nodeLed.led.clr = "white";
-      }
-      this.sendLedCmd(nodeLed.led.chainIdx, nodeLed.led.clr);
-      dbg += "P" + nodeLed.padIdx + " X" + nodeLed.ledIdx + " C" + nodeLed.led.chainIdx + ", ";
-    }
-    $('#DebugInfo2').text(dbg);
-  };
-
-  SpideyWall.prototype.setLinkColour = function(nodeIdx, linkIdx, linkStep, disp, colour) {
-    var dbg, edgeLeds, led, link, node, _i, _len, _ref;
-    node = this.spideyGraph.nodeList[nodeIdx];
-    link = node.edgesTo[linkIdx];
-    dbg = "";
-    if (linkStep < link.edgeList.length) {
-      _ref = link.edgeList[linkStep];
-      for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-        edgeLeds = _ref[_i];
-        led = edgeLeds.led;
-        dbg += "P" + led.padIdx + " X" + led.ledIdx + " C" + led.chainIdx + ", ";
-        if (disp) {
-          led.clr = colour;
-        } else {
-          led.clr = "white";
-        }
-        this.sendLedCmd(led.chainIdx, led.clr);
-      }
-    } else {
-      dbg = "ListLenErr";
-    }
-    $('#DebugInfo2').text(dbg);
-  };
-
-  SpideyWall.prototype.getNodeXY = function(nodeIdx) {
-    return this.spideyGraph.nodeList[nodeIdx].CofG.pt;
-  };
-
-  SpideyWall.prototype.getLinkLedXY = function(nodeIdx, linkIdx, linkStep) {
-    return this.spideyGraph.nodeList[nodeIdx].edgesTo[linkIdx].edgeList[linkStep][0].led.pt;
-  };
-
-  SpideyWall.prototype.getNumLinks = function(nodeIdx) {
-    return this.spideyGraph.nodeList[nodeIdx].edgesTo.length;
-  };
-
-  SpideyWall.prototype.getLinkLength = function(nodeIdx, linkIdx) {
-    return this.spideyGraph.nodeList[nodeIdx].edgesTo[linkIdx].edgeList.length;
-  };
-
-  SpideyWall.prototype.getLinkTarget = function(nodeIdx, linkIdx) {
-    return this.spideyGraph.nodeList[nodeIdx].edgesTo[linkIdx].toNodeIdx;
   };
 
   SpideyWall.prototype.preShowAll = function() {
-    return this.ipCmdBuf = "";
+    var link, _i, _len, _ref, _results;
+    this.ipCmdBuf = "";
+    if (this.debugCanvas) {
+      this.debugCanvas.clearRect(0, 0, 500, 1000);
+      _ref = this.spideyGeometry.links;
+      _results = [];
+      for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+        link = _ref[_i];
+        this.debugCanvas.beginPath();
+        this.debugCanvas.moveTo(link.xSource, link.ySource);
+        this.debugCanvas.lineTo(link.xTarget, link.yTarget);
+        _results.push(this.debugCanvas.stroke());
+      }
+      return _results;
+    }
   };
 
   SpideyWall.prototype.showAll = function() {
     this.ipCmdBuf = "0000000101" + this.ipCmdBuf;
     this.execSpideyCmd("http://macallan:5078/rawcmd/" + this.ipCmdBuf);
+  };
+
+  SpideyWall.prototype.setNodeColour = function(nodeIdx, disp, colour) {
+    var node, nodeLed, _i, _len, _ref;
+    node = this.spideyGeometry.nodes[nodeIdx];
+    _ref = node.ledIdxs;
+    for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+      nodeLed = _ref[_i];
+      this.sendLedCmd(nodeLed, colour);
+    }
+  };
+
+  SpideyWall.prototype.setLinkColour = function(nodeIdx, nodeLinkIdx, linkStep, disp, colour) {
+    var edge, ledIdx, link, linkIdx, node, _i, _len, _ref;
+    node = this.spideyGeometry.nodes[nodeIdx];
+    linkIdx = node.linkIdxs[nodeLinkIdx];
+    link = this.spideyGeometry.links[linkIdx];
+    _ref = link.padEdges;
+    for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+      edge = _ref[_i];
+      if (linkStep < edge.ledIdxs.length) {
+        ledIdx = edge.ledIdxs[linkStep];
+        this.sendLedCmd(ledIdx, colour);
+      }
+    }
+  };
+
+  SpideyWall.prototype.getNodeXY = function(nodeIdx) {
+    var node;
+    node = this.spideyGeometry.nodes[nodeIdx];
+    return {
+      x: node.x,
+      y: node.y
+    };
+  };
+
+  SpideyWall.prototype.getLinkAngle = function(nodeIdx, nodeLinkIdx) {
+    var link, linkIdx, node;
+    node = this.spideyGeometry.nodes[nodeIdx];
+    linkIdx = node.linkIdxs[nodeLinkIdx];
+    link = this.spideyGeometry.links[linkIdx];
+    if (link == null) {
+      debugger;
+    }
+    return link.linkAngle;
+  };
+
+  SpideyWall.prototype.getLinkLedXY = function(nodeIdx, nodeLinkIdx, linkStep) {
+    var led, ledIdx, link, linkIdx, node;
+    node = this.spideyGeometry.nodes[nodeIdx];
+    linkIdx = node.linkIdxs[nodeLinkIdx];
+    link = this.spideyGeometry.links[linkIdx];
+    ledIdx = link.padEdges[0].ledIdxs[linkStep];
+    led = this.spideyGeometry.leds[ledIdx];
+    if (led == null) {
+      debugger;
+    }
+    return {
+      x: led.x,
+      y: led.y
+    };
+  };
+
+  SpideyWall.prototype.getNumLinks = function(nodeIdx) {
+    var node;
+    node = this.spideyGeometry.nodes[nodeIdx];
+    return node.linkIdxs.length;
+  };
+
+  SpideyWall.prototype.getLinkLength = function(nodeIdx, nodeLinkIdx) {
+    var edgeLen, link, linkIdx, node, padEdge, _i, _len, _ref;
+    node = this.spideyGeometry.nodes[nodeIdx];
+    linkIdx = node.linkIdxs[nodeLinkIdx];
+    link = this.spideyGeometry.links[linkIdx];
+    edgeLen = 1000;
+    _ref = link.padEdges;
+    for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+      padEdge = _ref[_i];
+      if (edgeLen > padEdge.ledIdxs.length) {
+        edgeLen = padEdge.ledIdxs.length;
+      }
+    }
+    return edgeLen;
+  };
+
+  SpideyWall.prototype.getLinkTarget = function(nodeIdx, nodeLinkIdx) {
+    var link, linkIdx, node;
+    node = this.spideyGeometry.nodes[nodeIdx];
+    linkIdx = node.linkIdxs[nodeLinkIdx];
+    link = this.spideyGeometry.links[linkIdx];
+    return link.target;
   };
 
   return SpideyWall;

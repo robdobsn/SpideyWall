@@ -77,8 +77,26 @@ def LinkTest():
         data = s.recv(4096)
         print ('Received', repr(data))    
 
-def StepTest():
-    return
+def StepTest(ledidx):
+    cmdmsg = bytearray.fromhex("0000000101000b0200000001000000000000")
+    msglen = 14
+    TOTLEDS = 1
+
+    n = ledidx
+    for k in range(TOTLEDS):
+
+        cmdmsg[6] = 11  # fill solid = 8, fill gradient = 11
+        cmdmsg[8] = int(n / 256)
+        cmdmsg[9] = int(n % 256)  # start at nth led
+        cmdmsg[11] = 1;  # fill nn leds
+        cmdmsg[12] = 255;   # start with colour 
+        cmdmsg[15] = 255;   # end with colour
+        
+        s.sendto(cmdmsg, (SERVER_ADDRESS, PORT))
+        print("Showing led " + str(n) + "\n")
+        sleep(1)
+
+        n = n + 1
  
 SERVER_ADDRESS = "192.168.0.227"
 PORT = 7
@@ -105,6 +123,10 @@ while True:
         LinkTest()
     elif inp == "L" or inp == "l":
         StepTest()
+    elif inp == "T" or inp == "t":
+        inp2 = input("LED no")
+        ledidx = int(inp2)
+        StepTest(ledidx)
     else:
         print ("Exiting")
         s.close()

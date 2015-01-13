@@ -46,7 +46,7 @@ class SpideyAppUI
 			$("#gamebuttons").hide()
 
 	addGame: (game, gameClick) ->
-		@addButton(@getButtonColour(), @selGame, game.gameName, game.gameName, game.gameName, game.gameIcon, 100, 100, "#gamesAvailable", 2)
+		@addButton(@getButtonColour(), @selGame, game.gameName, game.gameName, game.gameName, game.gameIcon, 100, 100, "#gamesAvailable", 200)
 		@gamesAvail[game.gameName] =
 			game: game
 			gameClick: gameClick
@@ -70,14 +70,26 @@ class SpideyAppUI
 		button.setTileIndex(@curTileIdx)
 		@curTileIdx += 1
 		button.addToDoc()
-		button.reposition(x,y,size*100,size*100,1)
+		button.reposition(x,y,size,size,1)
 		button.setText(text)
 		return
 
-	showGamePad: (tlx, tly) -> 
-		@addButton("red", @arrowClick, "up", "up", "UP", "appbar.arrow.up.svg", tlx+200, tly, "#gamebuttons", 2)
-		@addButton("yellow", @arrowClick, "left", "left", "LEFT", "appbar.arrow.left.svg", tlx, tly+200, "#gamebuttons", 2)
-		@addButton("green", @arrowClick, "down", "down", "DOWN", "appbar.arrow.down.svg", tlx+200, tly+400, "#gamebuttons", 2)
-		@addButton("blue", @arrowClick, "right", "right", "RIGHT", "appbar.arrow.right.svg", tlx+400, tly+200, "#gamebuttons", 2)
+	arrowClick: (param) =>
+		if @directionCallback?
+			@directionCallback(param)
+
+	showGamePad: (tlx, tly, @directionCallback, small) ->
+		if small? and small
+			tlx = 50
+			tly = 200
+			stp = 50
+			butSize = 50
+		else
+			stp = 200
+			butSize = 200
+		@addButton("red", @arrowClick, "up", "up", "UP", "appbar.arrow.up.svg", tlx+stp, tly, "#gamebuttons", butSize)
+		@addButton("yellow", @arrowClick, "left", "left", "LEFT", "appbar.arrow.left.svg", tlx, tly+stp, "#gamebuttons", butSize)
+		@addButton("green", @arrowClick, "down", "down", "DOWN", "appbar.arrow.down.svg", tlx+stp, tly+2*stp, "#gamebuttons", butSize)
+		@addButton("blue", @arrowClick, "right", "right", "RIGHT", "appbar.arrow.right.svg", tlx+2*stp, tly+stp, "#gamebuttons", butSize)
 		return
 

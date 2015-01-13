@@ -2,7 +2,10 @@ class SpideyApp
 	constructor: ->
 		@spideyWallIP = "192.168.0.227"
 		@curTileIdx = 0
-		@spideyWall = new SpideyWall()
+		debugCanvas = document
+			.getElementById("dbgCanvas")
+			.getContext("2d")
+		@spideyWall = new SpideyWall(debugCanvas)
 		return
 
 	go: ->

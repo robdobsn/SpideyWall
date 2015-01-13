@@ -7,19 +7,21 @@ class SpideyGame_PacMan extends SpideyGame
 
 	go: () ->
 		# Called from main UI when game started
-		@spideyAppUI.addButton("red", @exitClick, "exit", "exit", "exit", "appbar.cancel.svg", 50, 50, "#gamebuttons", 1)
-		@spideyAppUI.showGamePad(200,100)
-		@testStart()
+		@spideyAppUI.addButton("red", @exitClick, "exit", "exit", "exit", "appbar.cancel.svg", 50, 50, "#gamebuttons", 100)
+		@spideyAppUI.showGamePad(200,100, @directionCallback, true)
+		# @testStart()
+		@gameTimer = setInterval(@step, 100)
 		return
 
 	exitClick: =>
-		@testEnd()
+		# @testEnd()
+		clearInterval(@gameTimer)
 		@spideyApp.exitGame()
 
 	showSprites: ->
 		@spideyWall.preShowAll()
-		# for actor in @baddies
-		# 	actor.show()
+		for actor in @baddies
+			actor.show()
 		@me.show()
 		@spideyWall.showAll()
 		return
@@ -31,7 +33,13 @@ class SpideyGame_PacMan extends SpideyGame
 		@showSprites()
 		return
 
+	directionCallback: (param) =>
+		@changeDirection(param)
+
 	mouseover: (dirn) ->
+		@changeDirection(dirn)
+
+	changeDirection: (dirn) ->
 		#console.log @dirn
 		if dirn is "forward" or dirn is "back"
 			@me.curDirection.move = dirn
