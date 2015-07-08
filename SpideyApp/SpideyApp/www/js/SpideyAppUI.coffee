@@ -108,6 +108,7 @@ class SpideyAppUI
 		@curJoystickDist = Math.sqrt((relY - ballCentreY)*(relY - ballCentreY)+(relX - ballCentreX)*(relX - ballCentreX))
 		# console.log relX, relY, @curJoystickDirn
 		@setJoystickBall()
+		@directionCallback(@curJoystickDirn)
 		return
 
 	showGameUI: (showIt) ->

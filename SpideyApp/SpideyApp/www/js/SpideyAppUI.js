@@ -104,6 +104,7 @@ SpideyAppUI = (function() {
     this.curJoystickDirn = Math.atan2(relY - ballCentreY, relX - ballCentreX) * 180 / Math.PI;
     this.curJoystickDist = Math.sqrt((relY - ballCentreY) * (relY - ballCentreY) + (relX - ballCentreX) * (relX - ballCentreX));
     this.setJoystickBall();
+    this.directionCallback(this.curJoystickDirn);
   };
 
   SpideyAppUI.prototype.showGameUI = function(showIt) {

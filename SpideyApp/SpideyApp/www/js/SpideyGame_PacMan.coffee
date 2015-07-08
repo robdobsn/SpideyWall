@@ -41,11 +41,7 @@ class SpideyGame_PacMan extends SpideyGame
 
 	changeDirection: (dirn) ->
 		#console.log @dirn
-		if dirn is "forward" or dirn is "back"
-			@me.curDirection.move = dirn
-			@me.curDirection.turn = "none"
-		else if dirn is "left" or dirn is "right"
-			@me.curDirection.turn = dirn
+		@me.setDirection(dirn)
 		return
 
 	getDebugInfo: () ->

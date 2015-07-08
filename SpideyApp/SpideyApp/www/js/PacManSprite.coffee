@@ -4,9 +4,7 @@ class PacManSprite
 			node: initialNode
 			linkIdx: -1
 			linkStep: 0
-		@curDirection =
-			move: "forward"
-			turn: "none"
+		@userReqdDirection = 0
 		@angleOfTravel = 0
 		return
 
@@ -16,6 +14,9 @@ class PacManSprite
 			linkIdx: @curLocation.linkIdx
 			linkStep: @curLocation.linkStep
 		return
+
+	setDirection: (dirn) ->
+		@userReqdDirection = dirn
 
 	show: ->
 		# Clear previous
@@ -45,22 +46,15 @@ class PacManSprite
 		# Check if we're currently at a node
 		if @curLocation.linkIdx < 0
 			# We are currently at a node
-			# console.log "Dirn " + @curDirection.move + "/" + @curDirection.turn + " lastDir " + if @angleOfTravel? then @angleOfTravel else "NO"
+			# console.log "Dirn " + @userReqdDirection + " lastDir " + if @angleOfTravel? then @angleOfTravel else "NO"
 			bestLinkIdx = 0
-
-			# Work out the angle we want to proceed in - based on the previous angle of travel and any turn commands
-			reqdAngle = if @curDirection.turn is "right" then @angleOfTravel+90 else if @curDirection.turn is "left" then @angleOfTravel-90 else @angleOfTravel
-
-			# Make sure the required angle is in the range -180 to +180
-			reqdAngle = if reqdAngle > 180 then reqdAngle-360 else if reqdAngle	< -180 then reqdAngle+360 else reqdAngle
-			# console.log "reqdAngle = " + reqdAngle
 
 			# Find the link which most closely approximates the desired angle of travel
 			nearestAngle = 360
 			for linkIdx in [0...@spideyWall.getNumLinks(@curLocation.node)]
 				linkAngle = @spideyWall.getLinkAngle(@curLocation.node, linkIdx)
 				# Compute difference between required and link angle - again staying within the -180 to +180 range
-				angleDiff = Math.abs(reqdAngle-linkAngle)
+				angleDiff = Math.abs(@userReqdDirection-linkAngle)
 				angleDiff = if angleDiff > 180 then 360-angleDiff else angleDiff
 				# console.log "linkAngle = " + linkAngle + " diff " + angleDiff
 				# Check whether angle is the best we've got
@@ -71,15 +65,16 @@ class PacManSprite
 			@curLocation.linkIdx = bestLinkIdx
 			@curLocation.linkStep = 0
 		else
-			# We're currently on a link
-			if @curDirection.move is "back"
+			# We're currently on a link see if reverse required
+			angleDiff = Math.abs(@userReqdDirection-@angleOfTravel)
+			angleDiff = if angleDiff > 180 then 360-angleDiff else angleDiff
+			if angleDiff < -140 or angleDiff > 140
 				# Check for reverse
 				@curLocation.linkStep -= 1
 				if @curLocation.linkStep < 0
 					# Have we now hit a node?
 					@curLocation.linkStep = 0
 					@curLocation.linkIdx = -1
-					@curDirection.move = "forward"
 			else
 				# Move further along the path
 				@curLocation.linkStep += 1

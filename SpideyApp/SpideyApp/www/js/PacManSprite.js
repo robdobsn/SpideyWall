@@ -11,10 +11,7 @@ PacManSprite = (function() {
       linkIdx: -1,
       linkStep: 0
     };
-    this.curDirection = {
-      move: "forward",
-      turn: "none"
-    };
+    this.userReqdDirection = 0;
     this.angleOfTravel = 0;
     return;
   }
@@ -25,6 +22,10 @@ PacManSprite = (function() {
       linkIdx: this.curLocation.linkIdx,
       linkStep: this.curLocation.linkStep
     };
+  };
+
+  PacManSprite.prototype.setDirection = function(dirn) {
+    return this.userReqdDirection = dirn;
   };
 
   PacManSprite.prototype.show = function() {
@@ -44,16 +45,14 @@ PacManSprite = (function() {
   };
 
   PacManSprite.prototype.moveMe = function() {
-    var angleDiff, bestLinkIdx, linkAngle, linkIdx, nearestAngle, reqdAngle, _i, _ref;
+    var angleDiff, bestLinkIdx, linkAngle, linkIdx, nearestAngle, _i, _ref;
     this.copyLocation();
     if (this.curLocation.linkIdx < 0) {
       bestLinkIdx = 0;
-      reqdAngle = this.curDirection.turn === "right" ? this.angleOfTravel + 90 : this.curDirection.turn === "left" ? this.angleOfTravel - 90 : this.angleOfTravel;
-      reqdAngle = reqdAngle > 180 ? reqdAngle - 360 : reqdAngle < -180 ? reqdAngle + 360 : reqdAngle;
       nearestAngle = 360;
       for (linkIdx = _i = 0, _ref = this.spideyWall.getNumLinks(this.curLocation.node); 0 <= _ref ? _i < _ref : _i > _ref; linkIdx = 0 <= _ref ? ++_i : --_i) {
         linkAngle = this.spideyWall.getLinkAngle(this.curLocation.node, linkIdx);
-        angleDiff = Math.abs(reqdAngle - linkAngle);
+        angleDiff = Math.abs(this.userReqdDirection - linkAngle);
         angleDiff = angleDiff > 180 ? 360 - angleDiff : angleDiff;
         if (nearestAngle > angleDiff) {
           nearestAngle = angleDiff;
@@ -63,12 +62,13 @@ PacManSprite = (function() {
       this.curLocation.linkIdx = bestLinkIdx;
       this.curLocation.linkStep = 0;
     } else {
-      if (this.curDirection.move === "back") {
+      angleDiff = Math.abs(this.userReqdDirection - this.angleOfTravel);
+      angleDiff = angleDiff > 180 ? 360 - angleDiff : angleDiff;
+      if (angleDiff < -140 || angleDiff > 140) {
         this.curLocation.linkStep -= 1;
         if (this.curLocation.linkStep < 0) {
           this.curLocation.linkStep = 0;
           this.curLocation.linkIdx = -1;
-          this.curDirection.move = "forward";
         }
       } else {
         this.curLocation.linkStep += 1;

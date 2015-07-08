@@ -50,7 +50,7 @@ SpideyWall = (function() {
     if (this.canvas != null) {
       led = this.spideyGeometry.leds[ledChainIdx];
       this.canvas.fillStyle = ledclr;
-      this.canvas.fillRect(led.x, led.y, 3, 3);
+      this.canvas.fillRect(led.x, led.y, 10, 10);
     }
   };
 

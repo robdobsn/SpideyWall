@@ -64,12 +64,7 @@ SpideyGame_PacMan = (function(_super) {
   };
 
   SpideyGame_PacMan.prototype.changeDirection = function(dirn) {
-    if (dirn === "forward" || dirn === "back") {
-      this.me.curDirection.move = dirn;
-      this.me.curDirection.turn = "none";
-    } else if (dirn === "left" || dirn === "right") {
-      this.me.curDirection.turn = dirn;
-    }
+    this.me.setDirection(dirn);
   };
 
   SpideyGame_PacMan.prototype.getDebugInfo = function() {

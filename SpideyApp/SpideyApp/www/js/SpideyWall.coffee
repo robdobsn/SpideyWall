@@ -31,7 +31,7 @@ class SpideyWall
 		if @canvas?
 			led = @spideyGeometry.leds[ledChainIdx]
 			@canvas.fillStyle = ledclr
-			@canvas.fillRect(led.x, led.y, 3, 3)
+			@canvas.fillRect(led.x, led.y, 10, 10)
 		return
 
 	preShowAll: () ->
