@@ -2,10 +2,13 @@
 var SpideyWall;
 
 SpideyWall = (function() {
-  function SpideyWall(debugCanvas) {
-    this.debugCanvas = debugCanvas;
+  function SpideyWall() {
     this.spideyGeometry = window.SpideyGeometry;
   }
+
+  SpideyWall.prototype.setCanvas = function(canvas) {
+    this.canvas = canvas;
+  };
 
   SpideyWall.prototype.d2h = function(d) {
     return d.toString(16);
@@ -44,26 +47,39 @@ SpideyWall = (function() {
     var clrStr, led;
     clrStr = ledclr === "green" ? "00ff00" : "ff0000";
     this.ipCmdBuf += "000802" + this.zeropad(this.d2h(ledChainIdx), 4) + "0001" + clrStr;
-    if (this.debugCanvas != null) {
+    if (this.canvas != null) {
       led = this.spideyGeometry.leds[ledChainIdx];
-      this.debugCanvas.fillStyle = ledclr;
-      this.debugCanvas.fillRect(led.x, led.y, 3, 3);
+      this.canvas.fillStyle = ledclr;
+      this.canvas.fillRect(led.x, led.y, 3, 3);
     }
   };
 
   SpideyWall.prototype.preShowAll = function() {
-    var link, _i, _len, _ref, _results;
+    var link, _i, _j, _len, _len1, _ref, _ref1, _results;
     this.ipCmdBuf = "";
-    if (this.debugCanvas) {
-      this.debugCanvas.clearRect(0, 0, 500, 1000);
+    if (this.canvas) {
+      this.canvas.fillStyle = "black";
+      this.canvas.fillRect(0, 0, 500, 1000);
+      this.canvas.lineWidth = 15;
       _ref = this.spideyGeometry.links;
-      _results = [];
       for (_i = 0, _len = _ref.length; _i < _len; _i++) {
         link = _ref[_i];
-        this.debugCanvas.beginPath();
-        this.debugCanvas.moveTo(link.xSource, link.ySource);
-        this.debugCanvas.lineTo(link.xTarget, link.yTarget);
-        _results.push(this.debugCanvas.stroke());
+        this.canvas.beginPath();
+        this.canvas.moveTo(link.xSource, link.ySource);
+        this.canvas.lineTo(link.xTarget, link.yTarget);
+        this.canvas.strokeStyle = "blue";
+        this.canvas.stroke();
+      }
+      this.canvas.lineWidth = 10;
+      _ref1 = this.spideyGeometry.links;
+      _results = [];
+      for (_j = 0, _len1 = _ref1.length; _j < _len1; _j++) {
+        link = _ref1[_j];
+        this.canvas.beginPath();
+        this.canvas.moveTo(link.xSource, link.ySource);
+        this.canvas.lineTo(link.xTarget, link.yTarget);
+        this.canvas.strokeStyle = "black";
+        _results.push(this.canvas.stroke());
       }
       return _results;
     }

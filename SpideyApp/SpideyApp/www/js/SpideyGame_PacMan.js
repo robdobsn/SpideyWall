@@ -23,7 +23,6 @@ SpideyGame_PacMan = (function(_super) {
   }
 
   SpideyGame_PacMan.prototype.go = function() {
-    this.spideyAppUI.addButton("red", this.exitClick, "exit", "exit", "exit", "appbar.cancel.svg", 50, 50, "#gamebuttons", 100);
     this.spideyAppUI.showGamePad(200, 100, this.directionCallback, true);
     this.gameTimer = setInterval(this.step, 100);
   };

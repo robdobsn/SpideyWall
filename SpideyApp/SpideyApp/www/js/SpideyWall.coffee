@@ -1,7 +1,9 @@
 class SpideyWall
-	constructor: (@debugCanvas) ->
+	constructor: () ->
 		@spideyGeometry = window.SpideyGeometry
 	
+	setCanvas: (@canvas) ->
+
 	d2h: (d) ->
 		return d.toString(16)
 
@@ -26,21 +28,31 @@ class SpideyWall
 	sendLedCmd: (ledChainIdx, ledclr) ->
 		clrStr = if ledclr is "green" then "00ff00" else "ff0000"
 		@ipCmdBuf += "000802" + @zeropad(@d2h(ledChainIdx), 4) + "0001" + clrStr
-		if @debugCanvas?
+		if @canvas?
 			led = @spideyGeometry.leds[ledChainIdx]
-			@debugCanvas.fillStyle = ledclr
-			@debugCanvas.fillRect(led.x, led.y, 3, 3)
+			@canvas.fillStyle = ledclr
+			@canvas.fillRect(led.x, led.y, 3, 3)
 		return
 
 	preShowAll: () ->
 		@ipCmdBuf = ""
-		if @debugCanvas
-			@debugCanvas.clearRect(0, 0, 500, 1000);
+		if @canvas
+			@canvas.fillStyle = "black"
+			@canvas.fillRect(0, 0, 500, 1000)
+			@canvas.lineWidth = 15
 			for link in @spideyGeometry.links 
-				@debugCanvas.beginPath();
-				@debugCanvas.moveTo(link.xSource, link.ySource);
-				@debugCanvas.lineTo(link.xTarget, link.yTarget);
-				@debugCanvas.stroke();
+				@canvas.beginPath()
+				@canvas.moveTo(link.xSource, link.ySource)
+				@canvas.lineTo(link.xTarget, link.yTarget)
+				@canvas.strokeStyle = "blue"
+				@canvas.stroke()
+			@canvas.lineWidth = 10
+			for link in @spideyGeometry.links 
+				@canvas.beginPath()
+				@canvas.moveTo(link.xSource, link.ySource)
+				@canvas.lineTo(link.xTarget, link.yTarget)
+				@canvas.strokeStyle = "black"
+				@canvas.stroke()
 
 	showAll: () ->
 		# @ledsSel.attr("fill", (d) -> return d.clr)

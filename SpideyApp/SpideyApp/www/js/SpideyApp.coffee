@@ -1,37 +1,16 @@
 class SpideyApp
 	constructor: ->
 		@spideyWallIP = "192.168.0.227"
-		@curTileIdx = 0
-		debugCanvas = document
-			.getElementById("dbgCanvas")
-			.getContext("2d")
-		@spideyWall = new SpideyWall(debugCanvas)
+		@spideyWall = new SpideyWall()
 		return
 
 	go: ->
 		@spideyAppUI = new SpideyAppUI()
-		@spideyAppUI.init()
-		@addGames()
-		@showGames()
-		return
-
-	addGames: ->
-		@spideyAppUI.addGame(new SpideyGame_PacMan(this, @spideyWall, @spideyAppUI), @gameClick)
-
-	showGames: ->
-		@spideyAppUI.showGameUI(false)
-		@spideyAppUI.showGamesAvailable(true)
-		return
-
-	gameClick: (game) =>
-		console.log "clicked game " + game.gameName
-		@spideyAppUI.showGamesAvailable(false)
-		game.go()
+		@spideyAppUI.init(@spideyWall)
+		spideyPacMan = new SpideyGame_PacMan(this, @spideyWall, @spideyAppUI)
+		spideyPacMan.go()
 		@spideyAppUI.showGameUI(true)
 		return
-
-	exitGame: () =>
-		@showGames()
 
 	configTabNameClick: ->
 		tabName = LocalStorage.get("DeviceConfigName")

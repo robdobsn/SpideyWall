@@ -7,7 +7,7 @@ class SpideyGame_PacMan extends SpideyGame
 
 	go: () ->
 		# Called from main UI when game started
-		@spideyAppUI.addButton("red", @exitClick, "exit", "exit", "exit", "appbar.cancel.svg", 50, 50, "#gamebuttons", 100)
+		# @spideyAppUI.addButton("red", @exitClick, "exit", "exit", "exit", "appbar.cancel.svg", 50, 50, "#gamebuttons", 100)
 		@spideyAppUI.showGamePad(200,100, @directionCallback, true)
 		# @testStart()
 		@gameTimer = setInterval(@step, 100)
