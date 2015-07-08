@@ -45,12 +45,17 @@ PacManSprite = (function() {
   };
 
   PacManSprite.prototype.moveMe = function() {
-    var angleDiff, bestLinkIdx, linkAngle, linkIdx, nearestAngle, _i, _ref;
+    var angleDiff, bestLinkIdx, linkAngle, linkIdx, nearestAngle, numLinksFromHere, _i;
     this.copyLocation();
     if (this.curLocation.linkIdx < 0) {
       bestLinkIdx = 0;
+      numLinksFromHere = this.spideyWall.getNumLinks(this.curLocation.node);
+      if (numLinksFromHere === 1) {
+        console.log("heading off the map nodeIdx=" + this.curLocation.node);
+        this.curLocation.node = this.spideyWall.getWrapNodeIdx(this.curLocation.node);
+      }
       nearestAngle = 360;
-      for (linkIdx = _i = 0, _ref = this.spideyWall.getNumLinks(this.curLocation.node); 0 <= _ref ? _i < _ref : _i > _ref; linkIdx = 0 <= _ref ? ++_i : --_i) {
+      for (linkIdx = _i = 0; 0 <= numLinksFromHere ? _i < numLinksFromHere : _i > numLinksFromHere; linkIdx = 0 <= numLinksFromHere ? ++_i : --_i) {
         linkAngle = this.spideyWall.getLinkAngle(this.curLocation.node, linkIdx);
         angleDiff = Math.abs(this.userReqdDirection - linkAngle);
         angleDiff = angleDiff > 180 ? 360 - angleDiff : angleDiff;

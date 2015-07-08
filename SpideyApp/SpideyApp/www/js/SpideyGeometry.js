@@ -20651,6 +20651,16 @@ window.SpideyGeometry =
         205
       ]
     }
-  ]
+  ],
+  "termainalNodeIdxs" : {
+    // Clockwise from top left (starting at vertical link)
+    // Note that the v shaped section at the bottom left is not a terminal node
+    "topEdgeNodeIdxs" : [ 78, 62 ],
+    "rightSlopeNodeIdxs" : [ 63, 72, 73 ],
+    "rightVerticalNodeIdxs" : [ 75, 69, 68, 70 ],
+    "bottomEdgeNodeIdxs" : [ 67, 66, 71 ],
+    "leftSlopeNodeIdxs" : [ 64, 65, 74, 71 ],
+    "leftVerticalNodeIdxs" : [ 60, 61, 77, 79 ]
+  }
 }
 ;

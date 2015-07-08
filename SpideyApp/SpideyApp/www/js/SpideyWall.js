@@ -4,6 +4,9 @@ var SpideyWall;
 SpideyWall = (function() {
   function SpideyWall() {
     this.spideyGeometry = window.SpideyGeometry;
+    this.execHtmlCmd = "http://macallan:5078/rawcmd/";
+    this.enableExecHtml = false;
+    this.wrapAroundNodeIdxs = null;
   }
 
   SpideyWall.prototype.setCanvas = function(canvas) {
@@ -29,18 +32,20 @@ SpideyWall = (function() {
   };
 
   SpideyWall.prototype.execSpideyCmd = function(cmdParams) {
-    return $.ajax(cmdParams, {
-      type: "GET",
-      dataType: "text",
-      success: (function(_this) {
-        return function(data, textStatus, jqXHR) {};
-      })(this),
-      error: (function(_this) {
-        return function(jqXHR, textStatus, errorThrown) {
-          return console.error("Direct exec command failed: " + textStatus + " " + errorThrown + " COMMAND=" + cmdParams);
-        };
-      })(this)
-    });
+    if (this.enableExecHtml) {
+      return $.ajax(cmdParams, {
+        type: "GET",
+        dataType: "text",
+        success: (function(_this) {
+          return function(data, textStatus, jqXHR) {};
+        })(this),
+        error: (function(_this) {
+          return function(jqXHR, textStatus, errorThrown) {
+            return console.error("Direct exec command failed: " + textStatus + " " + errorThrown + " COMMAND=" + cmdParams);
+          };
+        })(this)
+      });
+    }
   };
 
   SpideyWall.prototype.sendLedCmd = function(ledChainIdx, ledclr) {
@@ -59,7 +64,7 @@ SpideyWall = (function() {
     this.ipCmdBuf = "";
     if (this.canvas) {
       this.canvas.fillStyle = "black";
-      this.canvas.fillRect(0, 0, 500, 1000);
+      this.canvas.fillRect(0, 0, 507, 1000);
       this.canvas.lineWidth = 15;
       _ref = this.spideyGeometry.links;
       for (_i = 0, _len = _ref.length; _i < _len; _i++) {
@@ -87,7 +92,7 @@ SpideyWall = (function() {
 
   SpideyWall.prototype.showAll = function() {
     this.ipCmdBuf = "0000000101" + this.ipCmdBuf;
-    this.execSpideyCmd("http://macallan:5078/rawcmd/" + this.ipCmdBuf);
+    this.execSpideyCmd(this.execHtmlCmd + this.ipCmdBuf);
   };
 
   SpideyWall.prototype.setNodeColour = function(nodeIdx, disp, colour) {
@@ -113,6 +118,29 @@ SpideyWall = (function() {
         this.sendLedCmd(ledIdx, colour);
       }
     }
+  };
+
+  SpideyWall.prototype.getWrapNodeIdx = function(nodeIdx) {
+    var nod, nodIdx, randElem, _i, _len, _ref;
+    if (this.wrapAroundNodeIdxs == null) {
+      this.wrapAroundNodeIdxs = [];
+      _ref = this.spideyGeometry.nodes;
+      for (nodIdx = _i = 0, _len = _ref.length; _i < _len; nodIdx = ++_i) {
+        nod = _ref[nodIdx];
+        if (nod.linkIdxs.length === 1) {
+          this.wrapAroundNodeIdxs.push(nodIdx);
+        }
+      }
+    }
+    randElem = Math.floor(Math.random() * this.wrapAroundNodeIdxs.length);
+    if (randElem < this.wrapAroundNodeIdxs.length) {
+      return this.wrapAroundNodeIdxs[randElem];
+    }
+    return nodeIdx;
+  };
+
+  SpideyWall.prototype.getNumNodes = function() {
+    return this.spideyGeometry.nodes.length;
   };
 
   SpideyWall.prototype.getNodeXY = function(nodeIdx) {

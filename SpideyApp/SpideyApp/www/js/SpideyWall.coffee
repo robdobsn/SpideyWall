@@ -1,6 +1,9 @@
 class SpideyWall
 	constructor: () ->
 		@spideyGeometry = window.SpideyGeometry
+		@execHtmlCmd = "http://macallan:5078/rawcmd/"
+		@enableExecHtml = false
+		@wrapAroundNodeIdxs = null
 	
 	setCanvas: (@canvas) ->
 
@@ -16,14 +19,15 @@ class SpideyWall
 		return if n.length >= width then n else new Array(width - n.length + 1).join(z) + n
 
 	execSpideyCmd: (cmdParams) ->
-		# console.log "Sending " + cmdParams 
-		$.ajax cmdParams,
-			type: "GET"
-			dataType: "text"
-			success: (data, textStatus, jqXHR) =>
-				return
-			error: (jqXHR, textStatus, errorThrown) =>
-				console.error ("Direct exec command failed: " + textStatus + " " + errorThrown + " COMMAND=" + cmdParams)
+		if @enableExecHtml
+			# console.log "Sending " + cmdParams 
+			$.ajax cmdParams,
+				type: "GET"
+				dataType: "text"
+				success: (data, textStatus, jqXHR) =>
+					return
+				error: (jqXHR, textStatus, errorThrown) =>
+					console.error ("Direct exec command failed: " + textStatus + " " + errorThrown + " COMMAND=" + cmdParams)
 
 	sendLedCmd: (ledChainIdx, ledclr) ->
 		clrStr = if ledclr is "green" then "00ff00" else "ff0000"
@@ -38,7 +42,7 @@ class SpideyWall
 		@ipCmdBuf = ""
 		if @canvas
 			@canvas.fillStyle = "black"
-			@canvas.fillRect(0, 0, 500, 1000)
+			@canvas.fillRect(0, 0, 507, 1000)
 			@canvas.lineWidth = 15
 			for link in @spideyGeometry.links 
 				@canvas.beginPath()
@@ -57,7 +61,7 @@ class SpideyWall
 	showAll: () ->
 		# @ledsSel.attr("fill", (d) -> return d.clr)
 		@ipCmdBuf = "0000000101" + @ipCmdBuf
-		@execSpideyCmd("http://macallan:5078/rawcmd/" + @ipCmdBuf)
+		@execSpideyCmd(@execHtmlCmd + @ipCmdBuf)
 		return
 
 	setNodeColour: (nodeIdx, disp, colour) ->
@@ -75,6 +79,20 @@ class SpideyWall
 				ledIdx = edge.ledIdxs[linkStep]
 				@sendLedCmd(ledIdx, colour)
 		return
+
+	getWrapNodeIdx: (nodeIdx) ->
+		if not @wrapAroundNodeIdxs?
+			@wrapAroundNodeIdxs = []
+			for nod, nodIdx in @spideyGeometry.nodes
+				if nod.linkIdxs.length == 1
+					@wrapAroundNodeIdxs.push nodIdx
+		randElem = Math.floor(Math.random() * @wrapAroundNodeIdxs.length)
+		if randElem < @wrapAroundNodeIdxs.length
+			return @wrapAroundNodeIdxs[randElem]
+		return nodeIdx
+
+	getNumNodes: () ->
+		return @spideyGeometry.nodes.length
 
 	getNodeXY: (nodeIdx) ->
 		node = @spideyGeometry.nodes[nodeIdx]

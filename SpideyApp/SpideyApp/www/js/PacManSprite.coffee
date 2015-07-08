@@ -49,9 +49,16 @@ class PacManSprite
 			# console.log "Dirn " + @userReqdDirection + " lastDir " + if @angleOfTravel? then @angleOfTravel else "NO"
 			bestLinkIdx = 0
 
+			# Check if we're heading off the edge of the map - only 1 link at a node
+			numLinksFromHere = @spideyWall.getNumLinks(@curLocation.node)
+			if numLinksFromHere == 1
+				console.log "heading off the map nodeIdx=" + @curLocation.node
+				# Wrap to another node
+				@curLocation.node = @spideyWall.getWrapNodeIdx(@curLocation.node)
+
 			# Find the link which most closely approximates the desired angle of travel
 			nearestAngle = 360
-			for linkIdx in [0...@spideyWall.getNumLinks(@curLocation.node)]
+			for linkIdx in [0...numLinksFromHere]
 				linkAngle = @spideyWall.getLinkAngle(@curLocation.node, linkIdx)
 				# Compute difference between required and link angle - again staying within the -180 to +180 range
 				angleDiff = Math.abs(@userReqdDirection-linkAngle)

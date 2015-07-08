@@ -1,6 +1,6 @@
 class SpideyApp
 	constructor: ->
-		@spideyWallIP = "192.168.0.227"
+		# @spideyWallIP = "192.168.0.227"
 		@spideyWall = new SpideyWall()
 		return
 

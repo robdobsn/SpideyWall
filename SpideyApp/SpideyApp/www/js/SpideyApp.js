@@ -3,7 +3,6 @@ var SpideyApp;
 
 SpideyApp = (function() {
   function SpideyApp() {
-    this.spideyWallIP = "192.168.0.227";
     this.spideyWall = new SpideyWall();
     return;
   }
