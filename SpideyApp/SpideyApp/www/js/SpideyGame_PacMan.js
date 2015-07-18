@@ -2,7 +2,8 @@
 var SpideyGame_PacMan,
   __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; },
   __hasProp = {}.hasOwnProperty,
-  __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
+  __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
+  __indexOf = [].indexOf || function(item) { for (var i = 0, l = this.length; i < l; i++) { if (i in this && this[i] === item) return i; } return -1; };
 
 SpideyGame_PacMan = (function(_super) {
   __extends(SpideyGame_PacMan, _super);
@@ -11,70 +12,144 @@ SpideyGame_PacMan = (function(_super) {
     this.spideyApp = spideyApp;
     this.spideyWall = spideyWall;
     this.spideyAppUI = spideyAppUI;
+    this.exitClick = __bind(this.exitClick, this);
+    this.mouseDownTest = __bind(this.mouseDownTest, this);
+    this.mouseMoveTest = __bind(this.mouseMoveTest, this);
     this.testStart = __bind(this.testStart, this);
     this.stepTest = __bind(this.stepTest, this);
     this.directionCallback = __bind(this.directionCallback, this);
     this.step = __bind(this.step, this);
-    this.exitClick = __bind(this.exitClick, this);
+    this.resizeCallback = __bind(this.resizeCallback, this);
     SpideyGame_PacMan.__super__.constructor.call(this, "PacMan", "pacman.svg");
-    this.me = new PacManSprite("me", 39, "green", this.spideyWall);
-    this.baddies = [new PacManSprite("bad1", 66, "red", this.spideyWall), new PacManSprite("bad2", 75, "red", this.spideyWall)];
+    this.pacmanSprite = new PacManSprite("pacman", 43, 0, 0, "#ffee00", true, 0, this.spideyWall, this.spideyAppUI);
+    this.ghostSprites = [new PacManSprite("blinky", 73, 0, 0, "#ff0000", false, 0, this.spideyWall, this.spideyAppUI), new PacManSprite("pinky", 79, 5, 0, "#ffc0cb", false, 1, this.spideyWall, this.spideyAppUI), new PacManSprite("inky", 70, 30, 0, "#00bfff", false, 2, this.spideyWall, this.spideyAppUI), new PacManSprite("clyde", 40, this.spideyWall.getNumPoints() / 3, 20, "#ff8000", false, 3, this.spideyWall, this.spideyAppUI)];
+    this.pillPositions = [
+      {
+        type: 1,
+        pointIdx: 720,
+        nodeIdx: 57,
+        linkIdx: 2,
+        linkStep: 5
+      }, {
+        type: 1,
+        pointIdx: 268,
+        nodeIdx: 15,
+        linkIdx: 2,
+        linkStep: 6
+      }, {
+        type: 1,
+        pointIdx: 372,
+        nodeIdx: 23,
+        linkIdx: 0,
+        linkStep: 2
+      }, {
+        type: 1,
+        pointIdx: 624,
+        nodeIdx: 47,
+        linkIdx: 1,
+        linkStep: 0
+      }
+    ];
+    this.ghostHouseNode = 1;
+    this.generateGameDots();
+    this.pacManDots = new PacManDots(this.gameDots, 5, this.spideyWall, this.spideyAppUI);
+    this.spideyAppUI.setResizeCallback(this.resizeCallback);
     return;
   }
 
   SpideyGame_PacMan.prototype.go = function() {
-    this.spideyAppUI.showGamePad(200, 100, this.directionCallback, true);
-    this.gameTimer = setInterval(this.step, 100);
-  };
-
-  SpideyGame_PacMan.prototype.exitClick = function() {
-    clearInterval(this.gameTimer);
-    return this.spideyApp.exitGame();
-  };
-
-  SpideyGame_PacMan.prototype.showSprites = function() {
-    var actor, _i, _len, _ref;
-    this.spideyWall.preShowAll();
-    _ref = this.baddies;
+    var ghost, _i, _len, _ref;
+    this.spideyAppUI.showGameUI(true);
+    this.spideyAppUI.setDirectionCallback(this.directionCallback);
+    _ref = this.ghostSprites;
     for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-      actor = _ref[_i];
-      actor.show();
+      ghost = _ref[_i];
+      ghost.showInitially();
     }
-    this.me.show();
-    this.spideyWall.showAll();
+    this.pacmanSprite.showInitially();
+    this.pacManDots.showInitially();
+    this.gameTimer = setInterval(this.step, 50);
+    $("#spriteOverlay").on("mousemove", this.mouseMoveTest);
+    $("#spriteOverlay").on("mousedown", this.mouseDownTest);
+  };
+
+  SpideyGame_PacMan.prototype.generateGameDots = function() {
+    var dotType, pillIdx, pillPt, point, pointIdx, tmpPillPoints, _i, _j, _len, _len1, _ref, _ref1;
+    tmpPillPoints = [];
+    _ref = this.pillPositions;
+    for (pillIdx = _i = 0, _len = _ref.length; _i < _len; pillIdx = ++_i) {
+      pillPt = _ref[pillIdx];
+      tmpPillPoints.push(pillPt.pointIdx);
+    }
+    this.gameDots = [];
+    _ref1 = this.spideyWall.getPoints();
+    for (pointIdx = _j = 0, _len1 = _ref1.length; _j < _len1; pointIdx = ++_j) {
+      point = _ref1[pointIdx];
+      dotType = 0;
+      pillIdx = -1;
+      if (__indexOf.call(tmpPillPoints, pointIdx) >= 0) {
+        pillIdx = tmpPillPoints.indexOf(pointIdx);
+        dotType = this.pillPositions[pillIdx];
+      }
+      this.gameDots.push({
+        dotType: dotType,
+        pillIdx: pillIdx
+      });
+    }
+  };
+
+  SpideyGame_PacMan.prototype.resizeCallback = function() {
+    var ghost, _i, _len, _ref;
+    _ref = this.ghostSprites;
+    for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+      ghost = _ref[_i];
+      ghost.resizeUI();
+    }
+    this.pacmanSprite.resizeUI();
+    this.pacManDots.resizeUI();
+  };
+
+  SpideyGame_PacMan.prototype.updateSprites = function() {
+    var ghost, _i, _len, _ref;
+    _ref = this.ghostSprites;
+    for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+      ghost = _ref[_i];
+      ghost.updateUI();
+    }
+    this.pacmanSprite.updateUI();
   };
 
   SpideyGame_PacMan.prototype.step = function() {
-    var actor, _i, _len, _ref;
-    this.me.moveMe();
-    _ref = this.baddies;
+    var ghost, _i, _len, _ref;
+    this.pacmanSprite.movePacman();
+    _ref = this.ghostSprites;
     for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-      actor = _ref[_i];
-      actor.moveBaddie(this.me);
+      ghost = _ref[_i];
+      ghost.moveGhost(this.pacmanSprite, this.ghostSprites[0]);
     }
-    this.showSprites();
+    this.updateSprites();
   };
 
   SpideyGame_PacMan.prototype.directionCallback = function(param) {
-    return this.changeDirection(param);
+    this.changeDirection(param);
   };
 
   SpideyGame_PacMan.prototype.mouseover = function(dirn) {
-    return this.changeDirection(dirn);
+    this.changeDirection(dirn);
   };
 
   SpideyGame_PacMan.prototype.changeDirection = function(dirn) {
-    this.me.setDirection(dirn);
+    this.pacmanSprite.setDirection(dirn);
   };
 
   SpideyGame_PacMan.prototype.getDebugInfo = function() {
-    return "N " + this.me.curLocation.node + " L " + this.me.curLocation.linkIdx + " S " + this.me.curLocation.linkStep;
+    return "N " + this.pacmanSprite.curLocation.node + " L " + this.pacmanSprite.curLocation.linkIdx + " S " + this.pacmanSprite.curLocation.linkStep;
   };
 
   SpideyGame_PacMan.prototype.stepTest = function() {
-    this.spideyWall.preShowAll();
-    this.spideyWall.sendLedCmd(this.testCurLed, "red");
-    this.spideyWall.showAll();
+    this.spideyAppUI.preShowAll();
+    this.spideyAppUI.sendLedCmd(this.testCurLed, "red");
+    this.spideyAppUI.showAll();
     this.testCurLed += 1;
   };
 
@@ -85,6 +160,43 @@ SpideyGame_PacMan = (function(_super) {
 
   SpideyGame_PacMan.prototype.testEnd = function() {
     clearInterval(this.tmr);
+  };
+
+  SpideyGame_PacMan.prototype.mouseMoveTest = function(event) {
+    var nodIdx, offs, point, pointIdx, spriteXY, xySpidey;
+    offs = $("#spriteOverlay").offset();
+    spriteXY = {
+      x: event.pageX - offs.left,
+      y: event.pageY - offs.top
+    };
+    xySpidey = this.spideyAppUI.getSpideyWallCoords(spriteXY);
+    nodIdx = this.spideyWall.getNodeNearXY(xySpidey.x, xySpidey.y);
+    pointIdx = this.spideyWall.getPointNearXY(xySpidey.x, xySpidey.y);
+    point = this.spideyWall.getPoints()[pointIdx];
+    console.log("X " + xySpidey.x + " Y " + xySpidey.y + " near nodeIdx " + nodIdx + " ptIdx " + pointIdx + " ptNodIdx " + point.nodeIdx + " lnkIdx " + point.linkIdx + " linkStep " + point.linkStep);
+  };
+
+  SpideyGame_PacMan.prototype.mouseDownTest = function(event) {
+    var lidx, nodIdx, numLinks, offs, spriteXY, xySpidey, _i;
+    offs = $("#spriteOverlay").offset();
+    spriteXY = {
+      x: event.pageX - offs.left,
+      y: event.pageY - offs.top
+    };
+    xySpidey = this.spideyAppUI.getSpideyWallCoords(spriteXY);
+    nodIdx = this.spideyWall.getNodeNearXY(xySpidey.x, xySpidey.y);
+    console.log("X " + xySpidey.x + " Y " + xySpidey.y + " idx " + nodIdx);
+    this.pacmanSprite.moveToNode(nodIdx);
+    this.pacmanSprite.updateUI();
+    numLinks = this.spideyWall.getNumLinks(nodIdx);
+    for (lidx = _i = 0; 0 <= numLinks ? _i < numLinks : _i > numLinks; lidx = 0 <= numLinks ? ++_i : --_i) {
+      console.log(this.spideyWall.getLinkAngle(nodIdx, lidx, 1));
+    }
+  };
+
+  SpideyGame_PacMan.prototype.exitClick = function() {
+    clearInterval(this.gameTimer);
+    this.spideyApp.exitGame();
   };
 
   return SpideyGame_PacMan;

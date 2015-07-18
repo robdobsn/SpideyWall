@@ -20,13 +20,12 @@ SpideyAppUI = (function() {
   }
 
   SpideyAppUI.prototype.init = function(spideyWall) {
-    var canvas;
+    this.spideyWall = spideyWall;
     $("html").css({
       background: "#000000"
     });
-    $("body").prepend("<div id=\"sqWrapper\">\n		        <canvas id=\"spideyCanvas\" \n		        	width=\"" + this.origBackdropSize.width + "\" \n		        	height=\"" + this.origBackdropSize.height + "\" \n		        	style=\"position: absolute; left: 0px; border: 0px; \"></canvas>\n	<div id=\"gamesAvailable\">\n	</div>\n	<div id=\"gamebuttons\" style=\"position:absolute;\">\n	</div>\n</div>");
-    canvas = document.getElementById("spideyCanvas").getContext("2d");
-    spideyWall.setCanvas(canvas);
+    $("body").prepend("<div id=\"gameArea\">\n		        <canvas id=\"spideyCanvas\" \n		        	style=\"position: absolute; left: 0px; border: 0px; \"></canvas>\n	<div id=\"spriteOverlay\" \n		        	style=\"position:absolute; ; left: 0px; border: 0px;\">\n	</div>\n	<div id=\"gamebuttons\" style=\"position:absolute;\">\n	</div>\n</div>");
+    this.canvas = document.getElementById("spideyCanvas").getContext("2d");
     $(window).on('orientationchange', (function(_this) {
       return function() {
         return _this.rebuildUI();
@@ -37,14 +36,15 @@ SpideyAppUI = (function() {
         return _this.rebuildUI();
       };
     })(this));
-    this.buttonColours = ["red", "green", "blue", "brown"];
-    this.nextButtonColour = 0;
-    this.gamesAvail = {};
-    return this.rebuildUI();
+    this.rebuildUI();
+  };
+
+  SpideyAppUI.prototype.setResizeCallback = function(resizeCallback) {
+    this.resizeCallback = resizeCallback;
   };
 
   SpideyAppUI.prototype.rebuildUI = function() {
-    var canvasLeft, canvasTop, origImgRatio, scaleHeight, scaleWidth, screenRatio;
+    var origImgRatio, scaleHeight, scaleWidth, screenRatio;
     this.dispHeight = window.innerHeight;
     this.dispWidth = window.innerWidth;
     this.isLandscape = this.dispWidth > this.dispHeight;
@@ -57,24 +57,71 @@ SpideyAppUI = (function() {
       scaleWidth = this.dispWidth;
       scaleHeight = this.dispWidth / origImgRatio;
     }
-    canvasLeft = (this.dispWidth - scaleWidth) / 2;
-    canvasTop = (this.dispHeight - scaleHeight) / 2;
     this.joystickSize = scaleWidth / 3;
+    this.canvasLeft = (this.dispWidth - scaleWidth) / 2;
+    this.canvasTop = (this.dispHeight - scaleHeight) / 2;
+    this.canvasWidth = scaleWidth;
+    this.canvasHeight = scaleHeight;
+    this.scaleFactorX = this.canvasWidth / this.origBackdropSize.width;
+    this.scaleFactorY = this.canvasHeight / this.origBackdropSize.height;
+    $("#spideyCanvas").prop({
+      "width": this.canvasWidth,
+      "height": this.canvasHeight
+    });
     $("#spideyCanvas").css({
-      "left": canvasLeft + "px",
-      "top": canvasTop + "px",
-      "width": scaleWidth + "px",
-      "height": scaleHeight + "px"
+      "left": this.canvasLeft + "px",
+      "top": this.canvasTop + "px",
+      "width": this.canvasWidth + "px",
+      "height": this.canvasHeight + "px"
+    });
+    $("#spriteOverlay").css({
+      "left": this.canvasLeft + "px",
+      "top": this.canvasTop + "px",
+      "width": this.canvasWidth + "px",
+      "height": this.canvasHeight + "px"
     });
     $("#gamebuttons").css({
-      "left": canvasLeft + 10 + "px",
-      "top": canvasTop + (0.76 * scaleHeight) + "px",
+      "left": this.canvasLeft + 10 + "px",
+      "top": this.canvasTop + (0.76 * this.canvasHeight) + "px",
       "width": this.joystickSize + "px",
       "height": this.joystickSize + "px"
     });
+    this.showGameBackdrop();
+    if (this.resizeCallback != null) {
+      this.resizeCallback();
+    }
+    if (typeof testtest !== "undefined" && testtest !== null) {
+      this.canvas.fillStyle = "black";
+      this.canvas.fillRect(0, 0, this.canvasWidth, this.canvasHeight);
+      this.canvas.fillStyle = "green";
+      this.canvas.fillRect(400, 700, 20, 20);
+      $("#spriteOverlay").append("<div id=\"dot_0000\"\n	style=\"position:absolute; visibility:visible; left:400px; top:700px\" >\n			        <svg width=\"20px\" height=\"20px\">\n			             <circle cx=\"10\" cy=\"10\" r=\"10\" stroke=\"black\" stroke-width=\"0\" fill=\"yellow\"/>\n			        </svg>\n			    </div>");
+    }
   };
 
-  SpideyAppUI.prototype.setJoystickBall = function() {
+  SpideyAppUI.prototype.getPositionOfSprite = function(xyInSpideyWallUnits) {
+    var xyOfSprite;
+    xyOfSprite = {
+      x: xyInSpideyWallUnits.x * this.scaleFactorX,
+      y: xyInSpideyWallUnits.y * this.scaleFactorY
+    };
+    return xyOfSprite;
+  };
+
+  SpideyAppUI.prototype.getSpideyWallCoords = function(xyInSpriteUnits) {
+    var xyOfSpidey;
+    xyOfSpidey = {
+      x: xyInSpriteUnits.x / this.scaleFactorX,
+      y: xyInSpriteUnits.y / this.scaleFactorY
+    };
+    return xyOfSpidey;
+  };
+
+  SpideyAppUI.prototype.setDirectionCallback = function(directionCallback) {
+    this.directionCallback = directionCallback;
+  };
+
+  SpideyAppUI.prototype.updateJoystickBallUI = function() {
     var ballMarginX, ballMarginY, ballMoveRadius, ballOffset, ballSize, dirnInRads;
     ballSize = this.joystickSize / 2;
     ballMarginX = this.joystickSize / 2 - ballSize / 2;
@@ -103,18 +150,47 @@ SpideyAppUI = (function() {
     relY = event.pageY - joystickPos.top;
     this.curJoystickDirn = Math.atan2(relY - ballCentreY, relX - ballCentreX) * 180 / Math.PI;
     this.curJoystickDist = Math.sqrt((relY - ballCentreY) * (relY - ballCentreY) + (relX - ballCentreX) * (relX - ballCentreX));
-    this.setJoystickBall();
+    this.updateJoystickBallUI();
     this.directionCallback(this.curJoystickDirn);
   };
 
   SpideyAppUI.prototype.showGameUI = function(showIt) {
     $("#gamebuttons").show();
+    this.showGameBackdrop();
+    this.showGamePad(200, 100);
   };
 
-  SpideyAppUI.prototype.showGamePad = function(tlx, tly, directionCallback, small) {
-    this.directionCallback = directionCallback;
+  SpideyAppUI.prototype.showGamePad = function(tlx, tly) {
     $("#gamebuttons").append("<div class=\"sqJoystick\" style=\"display:block; opacity:1;\">\n	<div class=\"sqJoystickImg\" style=\"position:absolute;\" >\n		<img width=\"100%\" height=\"100%\" src=\"img/joystickbase.png\"></img>\n	</div>\n	<div id=\"sqJoystickBall\" style=\"position:absolute;\" >\n		<img width=\"50%\" height=\"50%\" src=\"img/joystickball.png\" style=\"margin-top:30%;margin-left:31%\"></img>\n	</div>\n</div>");
     $(".sqJoystick").on("mousemove", this.mouseMoveJoystick);
+  };
+
+  SpideyAppUI.prototype.showGameBackdrop = function() {
+    var link, linkIdx, _i, _j, _len, _len1, _ref, _ref1, _results;
+    this.canvas.fillStyle = "black";
+    this.canvas.fillRect(0, 0, this.canvasWidth, this.canvasHeight);
+    this.canvas.lineWidth = this.canvasHeight / 30;
+    _ref = this.spideyWall.getLinks();
+    for (linkIdx = _i = 0, _len = _ref.length; _i < _len; linkIdx = ++_i) {
+      link = _ref[linkIdx];
+      this.canvas.beginPath();
+      this.canvas.moveTo(link.xSource * this.scaleFactorX, link.ySource * this.scaleFactorY);
+      this.canvas.lineTo(link.xTarget * this.scaleFactorX, link.yTarget * this.scaleFactorY);
+      this.canvas.strokeStyle = "blue";
+      this.canvas.stroke();
+    }
+    this.canvas.lineWidth = this.canvasHeight / 50;
+    _ref1 = this.spideyWall.getLinks();
+    _results = [];
+    for (_j = 0, _len1 = _ref1.length; _j < _len1; _j++) {
+      link = _ref1[_j];
+      this.canvas.beginPath();
+      this.canvas.moveTo(link.xSource * this.scaleFactorX, link.ySource * this.scaleFactorY);
+      this.canvas.lineTo(link.xTarget * this.scaleFactorX, link.yTarget * this.scaleFactorY);
+      this.canvas.strokeStyle = "black";
+      _results.push(this.canvas.stroke());
+    }
+    return _results;
   };
 
   return SpideyAppUI;

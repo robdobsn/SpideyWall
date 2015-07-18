@@ -1,4 +1,7 @@
+# SpideyApp - the main app module
+
 class SpideyApp
+
 	constructor: ->
 		# @spideyWallIP = "192.168.0.227"
 		@spideyWall = new SpideyWall()
@@ -9,7 +12,6 @@ class SpideyApp
 		@spideyAppUI.init(@spideyWall)
 		spideyPacMan = new SpideyGame_PacMan(this, @spideyWall, @spideyAppUI)
 		spideyPacMan.go()
-		@spideyAppUI.showGameUI(true)
 		return
 
 	configTabNameClick: ->
@@ -28,7 +30,10 @@ $(document).bind ("mobileinit"), ->
 	# This isn't currently needed as the tablet now uses a local server
 	$.mobile.allowCrossDomainPages = true
 	$.support.cors = true
+	return
 
 $(document).ready ->
 	spideyApp = new SpideyApp()
 	spideyApp.go()
+	return
+	

@@ -13,7 +13,6 @@ SpideyApp = (function() {
     this.spideyAppUI.init(this.spideyWall);
     spideyPacMan = new SpideyGame_PacMan(this, this.spideyWall, this.spideyAppUI);
     spideyPacMan.go();
-    this.spideyAppUI.showGameUI(true);
   };
 
   SpideyApp.prototype.configTabNameClick = function() {
@@ -37,11 +36,11 @@ SpideyApp = (function() {
 
 $(document).bind("mobileinit", function() {
   $.mobile.allowCrossDomainPages = true;
-  return $.support.cors = true;
+  $.support.cors = true;
 });
 
 $(document).ready(function() {
   var spideyApp;
   spideyApp = new SpideyApp();
-  return spideyApp.go();
+  spideyApp.go();
 });

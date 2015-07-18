@@ -1,84 +1,22 @@
+# Handle the SpideyWall geometry
+
 class SpideyWall
+
 	constructor: () ->
 		@spideyGeometry = window.SpideyGeometry
-		@execHtmlCmd = "http://macallan:5078/rawcmd/"
-		@enableExecHtml = false
 		@wrapAroundNodeIdxs = null
-	
-	setCanvas: (@canvas) ->
+		@pointsInGeometry = @generatePointInfo()
 
-	d2h: (d) ->
-		return d.toString(16)
+	# Access methods to get information about the geometry
 
-	h2d: (h) ->
-		return parseInt(h,16)
+	getLinks: () ->
+		return @spideyGeometry.links 
 
-	zeropad: (n, width, z) ->
-		z = z || '0'
-		n = n + ''
-		return if n.length >= width then n else new Array(width - n.length + 1).join(z) + n
+	getPoints: () ->
+		return @pointsInGeometry
 
-	execSpideyCmd: (cmdParams) ->
-		if @enableExecHtml
-			# console.log "Sending " + cmdParams 
-			$.ajax cmdParams,
-				type: "GET"
-				dataType: "text"
-				success: (data, textStatus, jqXHR) =>
-					return
-				error: (jqXHR, textStatus, errorThrown) =>
-					console.error ("Direct exec command failed: " + textStatus + " " + errorThrown + " COMMAND=" + cmdParams)
-
-	sendLedCmd: (ledChainIdx, ledclr) ->
-		clrStr = if ledclr is "green" then "00ff00" else "ff0000"
-		@ipCmdBuf += "000802" + @zeropad(@d2h(ledChainIdx), 4) + "0001" + clrStr
-		if @canvas?
-			led = @spideyGeometry.leds[ledChainIdx]
-			@canvas.fillStyle = ledclr
-			@canvas.fillRect(led.x, led.y, 10, 10)
-		return
-
-	preShowAll: () ->
-		@ipCmdBuf = ""
-		if @canvas
-			@canvas.fillStyle = "black"
-			@canvas.fillRect(0, 0, 507, 1000)
-			@canvas.lineWidth = 15
-			for link in @spideyGeometry.links 
-				@canvas.beginPath()
-				@canvas.moveTo(link.xSource, link.ySource)
-				@canvas.lineTo(link.xTarget, link.yTarget)
-				@canvas.strokeStyle = "blue"
-				@canvas.stroke()
-			@canvas.lineWidth = 10
-			for link in @spideyGeometry.links 
-				@canvas.beginPath()
-				@canvas.moveTo(link.xSource, link.ySource)
-				@canvas.lineTo(link.xTarget, link.yTarget)
-				@canvas.strokeStyle = "black"
-				@canvas.stroke()
-
-	showAll: () ->
-		# @ledsSel.attr("fill", (d) -> return d.clr)
-		@ipCmdBuf = "0000000101" + @ipCmdBuf
-		@execSpideyCmd(@execHtmlCmd + @ipCmdBuf)
-		return
-
-	setNodeColour: (nodeIdx, disp, colour) ->
-		node = @spideyGeometry.nodes[nodeIdx]
-		for nodeLed in node.ledIdxs
-			@sendLedCmd(nodeLed, colour)
-		return
-
-	setLinkColour: (nodeIdx, nodeLinkIdx, linkStep, disp, colour) ->
-		node = @spideyGeometry.nodes[nodeIdx]
-		linkIdx = node.linkIdxs[nodeLinkIdx]
-		link = @spideyGeometry.links[linkIdx]
-		for edge in link.padEdges
-			if linkStep < edge.ledIdxs.length
-				ledIdx = edge.ledIdxs[linkStep]
-				@sendLedCmd(ledIdx, colour)
-		return
+	getNumPoints: () ->
+		return @pointsInGeometry.length		
 
 	getWrapNodeIdx: (nodeIdx) ->
 		if not @wrapAroundNodeIdxs?
@@ -91,6 +29,10 @@ class SpideyWall
 			return @wrapAroundNodeIdxs[randElem]
 		return nodeIdx
 
+	getStepDist: () ->
+		# Distance (in SpideyGeometry units) of one average step in a link
+		return 7
+
 	getNumNodes: () ->
 		return @spideyGeometry.nodes.length
 
@@ -98,13 +40,15 @@ class SpideyWall
 		node = @spideyGeometry.nodes[nodeIdx]
 		return { x: node.x, y: node.y }
 
-	getLinkAngle: (nodeIdx, nodeLinkIdx) ->
+	getLinkAngle: (nodeIdx, nodeLinkIdx, moveDirection) ->
 		node = @spideyGeometry.nodes[nodeIdx]
 		linkIdx = node.linkIdxs[nodeLinkIdx]
 		link = @spideyGeometry.links[linkIdx]
 		if not link?
 			debugger
-		return link.linkAngle
+		if moveDirection > 0
+			return link.linkAngle
+		return if link.linkAngle > 0 then link.linkAngle-180 else link.linkAngle+180
 
 	getLinkLedXY: (nodeIdx, nodeLinkIdx, linkStep) ->
 		node = @spideyGeometry.nodes[nodeIdx]
@@ -113,7 +57,7 @@ class SpideyWall
 		ledIdx = link.padEdges[0].ledIdxs[linkStep]
 		led = @spideyGeometry.leds[ledIdx]
 		if not led?
-			debugger
+			console.log "Error no led"
 		return { x: led.x, y: led.y }
 
 	getNumLinks: (nodeIdx) ->
@@ -137,3 +81,93 @@ class SpideyWall
 		link = @spideyGeometry.links[linkIdx]
 		return link.target
 
+	getLinkCofG: (nodeIdx, nodeLinkIdx, linkStep) ->
+		node = @spideyGeometry.nodes[nodeIdx]
+		linkIdx = node.linkIdxs[nodeLinkIdx]
+		link = @spideyGeometry.links[linkIdx]
+		xCofG = 0
+		yCofG = 0
+		cnt = 0
+		# Find the centre of the led xy positions at the appropriate
+		# postion along the link
+		for edge in link.padEdges
+			if linkStep < edge.ledIdxs.length
+				ledIdx = edge.ledIdxs[linkStep]
+				led = @spideyGeometry.leds[ledIdx]
+				xCofG += led.x
+				yCofG += led.y
+				cnt++
+		if cnt is 0
+			# Instead use the point half way along the link
+			cnt = 2
+			xCofG = link.xSource+link.xTarget
+			yCofG = link.ySource+link.yTarget
+		return { x: xCofG/cnt, y: yCofG/cnt }
+
+	getNodeNearXY: (x, y) ->
+		bestDist = 1000000
+		bestIdx = -1
+		for nod, nodIdx in @spideyGeometry.nodes
+			nodXy = @getNodeXY(nodIdx)
+			dist = Math.pow(x-nodXy.x,2) + Math.pow(y-nodXy.y,2)
+			if bestDist > dist
+				bestDist = dist
+				bestIdx = nodIdx
+		console.log "nodXy " + @getNodeXY(bestIdx).x + " " + @getNodeXY(bestIdx).y
+		return bestIdx
+
+	generatePointInfo: () ->
+		# For each node and each step in a link generate a unique ID which
+		# can be referenced directly
+		linksIdxsProcessed = []
+		pointList = []
+		for nod, nodIdx in @spideyGeometry.nodes
+			nod.pointIdx = pointList.length
+			pointList.push
+				x: nod.x
+				y: nod.y
+				nodeIdx: nodIdx
+				linkIdx: -1
+				linkStep: 0
+			for nodeLinkIdx in [0...nod.linkIdxs.length]
+				# Get link info
+				linkIdx = nod.linkIdxs[nodeLinkIdx]
+				# Check link not already processed
+				if linkIdx not in linksIdxsProcessed
+					# Add to list of processed links
+					linksIdxsProcessed.push(linkIdx)
+					link = @spideyGeometry.links[linkIdx]
+					# Find minimum num leds in link
+					linkLen = @getLinkLength(nodIdx, nodeLinkIdx)
+					# Process the steps as points
+					linkPoints = []
+					for stepIdx in [0...linkLen]
+						linkPoints.push(pointList.length)
+						pointInf = @getLinkCofG(nodIdx, nodeLinkIdx, stepIdx)
+						pointInf.nodeIdx = nodIdx
+						pointInf.linkIdx = nodeLinkIdx
+						pointInf.linkStep = stepIdx
+						pointList.push(pointInf)
+					link.pointIdxs = linkPoints
+					# Find the reverse link
+					revLnk = null
+					for revLnkTest in @spideyGeometry.links
+						if revLnkTest.source is link.target and revLnkTest.target is link.source
+							linksIdxsProcessed.push(revLnkTest.linkIdx)
+							revLnk = revLnkTest
+							# Store the points info in reverse for the reverse link
+							revLinkPoints = linkPoints.slice(0)
+							revLinkPoints.reverse()
+							revLnk.pointIdxs = revLinkPoints
+							break
+		return pointList
+
+	getPointNearXY: (x, y) ->
+		bestDist = 1000000
+		bestIdx = -1
+		for pt, ptIdx in @pointsInGeometry
+			dist = Math.pow(x-pt.x,2) + Math.pow(y-pt.y,2)
+			if bestDist > dist
+				bestDist = dist
+				bestIdx = ptIdx
+		return bestIdx

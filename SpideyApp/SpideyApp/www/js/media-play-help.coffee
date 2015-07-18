@@ -1,4 +1,7 @@
+# Helper to handle playing of sounds
+
 class MediaPlayHelper
+
     constructor: (@soundsDict) ->
         @soundsLoaded = {}
 
