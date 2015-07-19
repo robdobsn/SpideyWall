@@ -17,15 +17,6 @@ SpideyAppUI = (function() {
     };
     this.curJoystickDirn = null;
     this.curJoystickDist = 0;
-  }
-
-  SpideyAppUI.prototype.init = function(spideyWall) {
-    this.spideyWall = spideyWall;
-    $("html").css({
-      background: "#000000"
-    });
-    $("body").prepend("<div id=\"gameArea\">\n		        <canvas id=\"spideyCanvas\" \n		        	style=\"position: absolute; left: 0px; border: 0px; \"></canvas>\n	<div id=\"spriteOverlay\" \n		        	style=\"position:absolute; ; left: 0px; border: 0px;\">\n	</div>\n	<div id=\"gamebuttons\" style=\"position:absolute;\">\n	</div>\n</div>");
-    this.canvas = document.getElementById("spideyCanvas").getContext("2d");
     $(window).on('orientationchange', (function(_this) {
       return function() {
         return _this.rebuildUI();
@@ -36,6 +27,17 @@ SpideyAppUI = (function() {
         return _this.rebuildUI();
       };
     })(this));
+  }
+
+  SpideyAppUI.prototype.init = function(spideyWall, restartCallback) {
+    this.spideyWall = spideyWall;
+    this.restartCallback = restartCallback;
+    $("html").css({
+      background: "#000000"
+    });
+    $("#gameArea").remove();
+    $("body").prepend("<div id=\"gameArea\">\n	<div id=\"gameScore\"\n		style=\"position: absolute; left: 420px; border: 50px; color:white; z-index: 10; \"></div>\n		        <canvas id=\"spideyCanvas\" \n		        	style=\"position: absolute; left: 0px; border: 0px; \"></canvas>\n	<div id=\"spriteOverlay\" \n		        	style=\"position:absolute; ; left: 0px; border: 0px;\">\n	</div>\n	<div id=\"gamebuttons\" style=\"position:absolute;\">\n	</div>\n</div>");
+    this.canvas = document.getElementById("spideyCanvas").getContext("2d");
     this.rebuildUI();
   };
 
@@ -166,7 +168,7 @@ SpideyAppUI = (function() {
   };
 
   SpideyAppUI.prototype.showGameBackdrop = function() {
-    var link, linkIdx, _i, _j, _len, _len1, _ref, _ref1, _results;
+    var link, linkIdx, _i, _j, _len, _len1, _ref, _ref1;
     this.canvas.fillStyle = "black";
     this.canvas.fillRect(0, 0, this.canvasWidth, this.canvasHeight);
     this.canvas.lineWidth = this.canvasHeight / 30;
@@ -181,16 +183,29 @@ SpideyAppUI = (function() {
     }
     this.canvas.lineWidth = this.canvasHeight / 50;
     _ref1 = this.spideyWall.getLinks();
-    _results = [];
     for (_j = 0, _len1 = _ref1.length; _j < _len1; _j++) {
       link = _ref1[_j];
       this.canvas.beginPath();
       this.canvas.moveTo(link.xSource * this.scaleFactorX, link.ySource * this.scaleFactorY);
       this.canvas.lineTo(link.xTarget * this.scaleFactorX, link.yTarget * this.scaleFactorY);
       this.canvas.strokeStyle = "black";
-      _results.push(this.canvas.stroke());
+      this.canvas.stroke();
     }
-    return _results;
+  };
+
+  SpideyAppUI.prototype.showGameOver = function() {
+    var popHig, popLeft, popTop, popWid;
+    popWid = this.canvasWidth / 2;
+    popHig = this.canvasHeight / 10;
+    popTop = this.canvasTop + this.canvasHeight / 3 - popHig / 2;
+    popLeft = this.canvasLeft + this.canvasWidth / 2 - popWid / 2;
+    $("body").append("<div id=\"gameoverpopup\" style=\"display:block; opacity:1;\n		        position: absolute;\n		        width: " + popWid + "px;\n		        height: " + popHig + "px;\n		        background: #000000;\n		        color: yellow;\n		        border: 10px solid yellow;\n		        border-radius: 10px;\n		        padding: 15px 17px;\n		        margin: 10% auto;\n		        top: " + popTop + "px;\n		        left: " + popLeft + "px;\">\n	<div style=\"text-align: center\">\n		<img width=\"100%\" height=\"100%\" src=\"img/gameoverplayagain.png\" style=\"\"></img>\n	</div>\n</div>");
+    $("#gameoverpopup").on("click", (function(_this) {
+      return function() {
+        $("#gameoverpopup").remove();
+        return _this.restartCallback();
+      };
+    })(this));
   };
 
   return SpideyAppUI;

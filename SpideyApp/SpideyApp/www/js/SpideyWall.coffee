@@ -79,6 +79,8 @@ class SpideyWall
 		node = @spideyGeometry.nodes[nodeIdx]
 		linkIdx = node.linkIdxs[nodeLinkIdx]
 		link = @spideyGeometry.links[linkIdx]
+		if not link? or not link.target?
+			debugger
 		return link.target
 
 	getLinkCofG: (nodeIdx, nodeLinkIdx, linkStep) ->
@@ -115,6 +117,29 @@ class SpideyWall
 				bestIdx = nodIdx
 		console.log "nodXy " + @getNodeXY(bestIdx).x + " " + @getNodeXY(bestIdx).y
 		return bestIdx
+
+	getPositionXY: (nodeIdx, nodeLinkIdx, linkStep) ->
+		xyPos = null
+		if nodeLinkIdx < 0
+			xyPos = @getNodeXY(nodeIdx)
+		else
+			xyPos = @getLinkCofG(nodeIdx, nodeLinkIdx, linkStep)
+		if not xyPos?
+			debugger
+		return xyPos
+
+	getPositionPointIdx: (nodeIdx, nodeLinkIdx, linkStep) ->
+		if nodeLinkIdx < 0
+			if not @spideyGeometry.nodes[nodeIdx].pointIdx?
+				debugger
+			return @spideyGeometry.nodes[nodeIdx].pointIdx
+		node = @spideyGeometry.nodes[nodeIdx]
+		linkIdx = node.linkIdxs[nodeLinkIdx]
+		link = @spideyGeometry.links[linkIdx]
+		if not link.pointIdxs[linkStep]?
+			# This can happen because there are no LEDs between two nodes
+			return node.pointIdx
+		return link.pointIdxs[linkStep]
 
 	generatePointInfo: () ->
 		# For each node and each step in a link generate a unique ID which

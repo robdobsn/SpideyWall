@@ -9,9 +9,14 @@ class SpideyApp
 
 	go: ->
 		@spideyAppUI = new SpideyAppUI()
-		@spideyAppUI.init(@spideyWall)
-		spideyPacMan = new SpideyGame_PacMan(this, @spideyWall, @spideyAppUI)
-		spideyPacMan.go()
+		@spideyAppUI.init(@spideyWall, @restartCallback)
+		@spideyPacMan = new SpideyGame_PacMan(this, @spideyWall, @spideyAppUI)
+		@spideyPacMan.go(false)
+		return
+
+	restartCallback: () =>
+		@spideyAppUI.init(@spideyWall, @restartCallback)
+		@spideyPacMan.go(true)
 		return
 
 	configTabNameClick: ->

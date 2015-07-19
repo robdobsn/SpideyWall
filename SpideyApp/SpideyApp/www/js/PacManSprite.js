@@ -2,7 +2,7 @@
 var PacManSprite;
 
 PacManSprite = (function() {
-  function PacManSprite(name, initialNodeIdx, leaveHouseDots, minFollowDist, colour, isPacman, moveAlgo, spideyWall, spideyAppUI) {
+  function PacManSprite(name, initialNodeIdx, leaveHouseDots, minFollowDist, colour, isPacman, moveAlgo, ghostHouseNode, spideyWall, spideyAppUI) {
     this.name = name;
     this.initialNodeIdx = initialNodeIdx;
     this.leaveHouseDots = leaveHouseDots;
@@ -10,10 +10,11 @@ PacManSprite = (function() {
     this.colour = colour;
     this.isPacman = isPacman;
     this.moveAlgo = moveAlgo;
+    this.ghostHouseNode = ghostHouseNode;
     this.spideyWall = spideyWall;
     this.spideyAppUI = spideyAppUI;
     this.curLocation = {
-      nodeIdx: this.initialNodeIdx,
+      nodeIdx: this.isPacman ? this.initialNodeIdx : this.ghostHouseNode,
       linkIdx: -1,
       linkStep: 0,
       stepSize: 1
@@ -21,14 +22,16 @@ PacManSprite = (function() {
     this.userReqdDirection = 0;
     this.angleOfTravel = 0;
     this.spriteSizePx = 25;
+    this.isVisible = this.isPacman;
+    this.dotsEatenWhenLastSentHome = 0;
     return;
   }
 
   PacManSprite.prototype.showInitially = function() {
     if (this.isPacman) {
-      return $("#spriteOverlay").append("<div id=\"sprite_" + this.name + "\" style=\"position:absolute; visibility:hidden\" >\n			        <svg viewBox=\"-140 -80 150 100\" width=\"" + this.spriteSizePx + "px\" height=\"" + this.spriteSizePx + "px\">\n			            <path\n			           style=\"fill:" + this.colour + ";stroke:" + this.colour + ";stroke-width:14.39999962;\n			           				stroke-miterlimit:4;stroke-opacity:1\"\n			           d=\"m 0,0 \n			              c -16.86408,33.1589 -57.645487,46.4843 -91.087814,29.7632 -33.44233,-16.7212 -46.8816569,-57.157 -30.017575,-90.3159 16.864081,-33.1589 57.645482,-46.4844 91.087819,-29.7632 12.54879,6.2744 22.82161,16.2595 29.39805,28.5746\n			           	  l -69.792329,31.4649 z\"\n			            />\n			        </svg>\n			    </div>");
+      return $("#spriteOverlay").append("<div id=\"sprite_" + this.name + "\" style=\"position:absolute; visibility:hidden\" >\n			        <svg viewBox=\"-140 -80 150 100\" width=\"" + this.spriteSizePx + "px\" height=\"" + this.spriteSizePx + "px\">\n			            <path\n			           style=\"fill:" + this.colour + ";stroke:" + this.colour + ";stroke-width:0;\n			           				stroke-miterlimit:4;opacity:1.0\"\n			           d=\"m 0,0 \n			              c -16.86408,33.1589 -57.645487,46.4843 -91.087814,29.7632 -33.44233,-16.7212 -46.8816569,-57.157 -30.017575,-90.3159 16.864081,-33.1589 57.645482,-46.4844 91.087819,-29.7632 12.54879,6.2744 22.82161,16.2595 29.39805,28.5746\n			           	  l -69.792329,31.4649 z\"\n			            />\n			        </svg>\n			    </div>");
     } else {
-      return $("#spriteOverlay").append("<div id=\"sprite_" + this.name + "\" style=\"position:absolute; visibility:hidden\">\n			        <svg viewBox=\"-10 -100 170 100\" width=\"" + this.spriteSizePx + "px\" height=\"" + this.spriteSizePx + "px\">\n			            <path\n			           style=\"fill:" + this.colour + ";stroke:" + this.colour + ";stroke-width:14.39999962;\n			           				stroke-miterlimit:4;stroke-opacity:1\"\n			           d=\"m 0,0 \n			              c -5.49953,-27.1434 1.05933,-123.834 67.82924,-122.9885 66.7699,0.8455 73.54087,94.0287 71.25122,121.2808 -2.28965,27.2521 -9.83924,20.9719 -14.93596,18.3842 -5.09672,-2.5877 -16.08257,-16.6765 -26.44335,-16.6765 -10.36078,0 -13.51175,15.1164 -24.13793,16.092 -10.62618,0.9756 -22.16027,-14.3948 -32.18391,-13.7931 -10.02364,0.6017 -16.62397,9.2152 -21.83908,12.6437 -5.21511,3.4285 -14.0407,12.2008 -19.54023,-14.9426 z\"\n			           />\n			        </svg>\n			    </div>");
+      return $("#spriteOverlay").append("<div id=\"sprite_" + this.name + "\" style=\"position:absolute; visibility:hidden\">\n			        <svg viewBox=\"-10 -100 170 100\" width=\"" + this.spriteSizePx + "px\" height=\"" + this.spriteSizePx + "px\">\n			            <path\n			           style=\"fill:" + this.colour + ";stroke:" + this.colour + ";stroke-width:0;\n			           				stroke-miterlimit:4;opacity:0.9\"\n			           d=\"m 0,0 \n			              c -5.49953,-27.1434 1.05933,-123.834 67.82924,-122.9885 66.7699,0.8455 73.54087,94.0287 71.25122,121.2808 -2.28965,27.2521 -9.83924,20.9719 -14.93596,18.3842 -5.09672,-2.5877 -16.08257,-16.6765 -26.44335,-16.6765 -10.36078,0 -13.51175,15.1164 -24.13793,16.092 -10.62618,0.9756 -22.16027,-14.3948 -32.18391,-13.7931 -10.02364,0.6017 -16.62397,9.2152 -21.83908,12.6437 -5.21511,3.4285 -14.0407,12.2008 -19.54023,-14.9426 z\"\n			           />\n			        </svg>\n			    </div>");
     }
   };
 
@@ -48,16 +51,21 @@ PacManSprite = (function() {
     this.updateUI();
   };
 
-  PacManSprite.prototype.updateUI = function() {
+  PacManSprite.prototype.updateUI = function(gameMode) {
     var spriteXY, xyPos;
     xyPos = this.getPositionXY();
     if (xyPos != null) {
       spriteXY = this.spideyAppUI.getPositionOfSprite(xyPos);
       $("#sprite_" + this.name).css({
-        "visibility": 'visible',
+        "visibility": this.isVisible ? 'visible' : 'hidden',
         "top": spriteXY.y - this.spriteSizePx / 2 + "px",
         "left": spriteXY.x - this.spriteSizePx / 2 + "px"
       });
+      if (!this.isPacman && (gameMode != null)) {
+        $("#sprite_" + this.name + " svg path").css({
+          "fill": gameMode === 'frightened' ? 'purple' : this.colour
+        });
+      }
     }
   };
 
@@ -69,10 +77,16 @@ PacManSprite = (function() {
     return Math.atan2(y2 - y1, x2 - x1) * 180 / Math.PI;
   };
 
+  PacManSprite.prototype.sendBackHome = function(dotsEaten) {
+    this.moveToNode(this.ghostHouseNode);
+    this.isVisible = false;
+    this.dotsEatenWhenLastSentHome = dotsEaten;
+  };
+
   PacManSprite.prototype.moveToNode = function(nodIdx) {
     this.curLocation.nodeIdx = nodIdx;
     this.curLocation.linkIdx = -1;
-    return this.curLocation.linkStep = 0;
+    this.curLocation.linkStep = 0;
   };
 
   PacManSprite.prototype.getPositionXY = function(sprite) {
@@ -80,16 +94,15 @@ PacManSprite = (function() {
     if (sprite == null) {
       sprite = this;
     }
-    xyPos = null;
-    if (sprite.curLocation.linkIdx < 0) {
-      xyPos = this.spideyWall.getNodeXY(sprite.curLocation.nodeIdx);
-    } else {
-      xyPos = this.spideyWall.getLinkCofG(sprite.curLocation.nodeIdx, sprite.curLocation.linkIdx, sprite.curLocation.linkStep);
-    }
-    if (xyPos == null) {
-      debugger;
-    }
+    xyPos = this.spideyWall.getPositionXY(sprite.curLocation.nodeIdx, sprite.curLocation.linkIdx, sprite.curLocation.linkStep);
     return xyPos;
+  };
+
+  PacManSprite.prototype.getPositionPointIdx = function(sprite) {
+    if (sprite == null) {
+      sprite = this;
+    }
+    return this.spideyWall.getPositionPointIdx(sprite.curLocation.nodeIdx, sprite.curLocation.linkIdx, sprite.curLocation.linkStep);
   };
 
   PacManSprite.prototype.movePacman = function() {
@@ -136,8 +149,19 @@ PacManSprite = (function() {
     }
   };
 
-  PacManSprite.prototype.moveGhost = function(pacmanChomper, blinkyGhost) {
-    var bestLinkIdx, blinkyPos, distFromPacman, linkDist, linkIdx, linkTarget, linkTargetXY, minDist, numStepsAhead, ownXY, pacmanXY, targetXY, theta, x, y, _i, _ref;
+  PacManSprite.prototype.moveGhost = function(gameMode, pacmanChomper, blinkyGhost, dotsEaten) {
+    var bestLinkIdx, blinkyPos, distFromPacman, linkDist, linkIdx, linkTarget, linkTargetXY, minDist, numLinks, numStepsAhead, ownXY, pacmanXY, targetXY, theta, x, y, _i, _ref;
+    if (!this.isVisible) {
+      if (dotsEaten - this.dotsEatenWhenLastSentHome > this.leaveHouseDots) {
+        this.isVisible = true;
+        console.log("DotsEaten " + dotsEaten + " make " + this.name + " visisble");
+      } else {
+        return false;
+      }
+    }
+    if (this.getPositionPointIdx(pacmanChomper) === this.getPositionPointIdx()) {
+      return true;
+    }
     this.copyLocation();
     if (this.curLocation.linkIdx < 0) {
       pacmanXY = this.getPositionXY(pacmanChomper);
@@ -145,30 +169,39 @@ PacManSprite = (function() {
         x: pacmanXY.x,
         y: pacmanXY.y
       };
-      if (this.moveAlgo === 1) {
-        numStepsAhead = 4;
-        theta = pacmanChomper.angleOfTravel * Math.PI / 180;
-        x = Math.cos(theta) * numStepsAhead * this.spideyWall.getStepDist();
-        y = Math.sin(theta) * numStepsAhead * this.spideyWall.getStepDist();
-        targetXY.x += x;
-        targetXY.y += y;
-      }
-      if (this.moveAlgo === 2) {
-        numStepsAhead = 2;
-        theta = pacmanChomper.angleOfTravel * Math.PI / 180;
-        x = pacmanXY.x + Math.cos(theta) * numStepsAhead * this.spideyWall.getStepDist();
-        y = pacmanXY.y + Math.sin(theta) * numStepsAhead * this.spideyWall.getStepDist();
-        blinkyPos = this.getPositionXY(blinkyGhost);
-        targetXY = {
-          x: blinkyPos.x + (x - blinkyPos.x) * 2,
-          y: blinkyPos.y + (y - blinkyPos.y) * 2
-        };
-      }
-      if (this.moveAlgo === 3) {
-        ownXY = this.getPositionXY();
-        distFromPacman = Math.sqrt(Math.pow(pacmanXY.x - ownXY.x, 2) + Math.pow(pacmanXY.y - ownXY.y, 2));
-        if (distFromPacman < this.minFollowDist * this.spideyWall.getStepDist()) {
-          targetXY = this.spideyWall.getNodeXY(this.initialNodeIdx);
+      if (gameMode === 'scatter') {
+        targetXY = this.spideyWall.getNodeXY(this.initialNodeIdx);
+      } else if (gameMode === 'frightened') {
+        numLinks = this.spideyWall.getNumLinks(this.curLocation.nodeIdx);
+        linkIdx = Math.floor(Math.random() * numLinks);
+        linkTarget = this.spideyWall.getLinkTarget(this.curLocation.nodeIdx, linkIdx);
+        targetXY = this.spideyWall.getNodeXY(linkTarget);
+      } else if (gameMode === 'chase') {
+        if (this.moveAlgo === 1) {
+          numStepsAhead = 4;
+          theta = pacmanChomper.angleOfTravel * Math.PI / 180;
+          x = Math.cos(theta) * numStepsAhead * this.spideyWall.getStepDist();
+          y = Math.sin(theta) * numStepsAhead * this.spideyWall.getStepDist();
+          targetXY.x += x;
+          targetXY.y += y;
+        }
+        if (this.moveAlgo === 2) {
+          numStepsAhead = 2;
+          theta = pacmanChomper.angleOfTravel * Math.PI / 180;
+          x = pacmanXY.x + Math.cos(theta) * numStepsAhead * this.spideyWall.getStepDist();
+          y = pacmanXY.y + Math.sin(theta) * numStepsAhead * this.spideyWall.getStepDist();
+          blinkyPos = this.getPositionXY(blinkyGhost);
+          targetXY = {
+            x: blinkyPos.x + (x - blinkyPos.x) * 2,
+            y: blinkyPos.y + (y - blinkyPos.y) * 2
+          };
+        }
+        if (this.moveAlgo === 3) {
+          ownXY = this.getPositionXY();
+          distFromPacman = Math.sqrt(Math.pow(pacmanXY.x - ownXY.x, 2) + Math.pow(pacmanXY.y - ownXY.y, 2));
+          if (distFromPacman < this.minFollowDist * this.spideyWall.getStepDist()) {
+            targetXY = this.spideyWall.getNodeXY(this.initialNodeIdx);
+          }
         }
       }
       minDist = 100000;
@@ -192,6 +225,10 @@ PacManSprite = (function() {
         this.curLocation.linkStep = 0;
       }
     }
+    if (this.getPositionPointIdx(pacmanChomper) === this.getPositionPointIdx()) {
+      return true;
+    }
+    return false;
   };
 
   return PacManSprite;

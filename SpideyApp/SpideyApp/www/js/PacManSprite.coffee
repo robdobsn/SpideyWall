@@ -2,15 +2,17 @@
 
 class PacManSprite
 
-	constructor: (@name, @initialNodeIdx, @leaveHouseDots, @minFollowDist, @colour, @isPacman, @moveAlgo, @spideyWall, @spideyAppUI) ->
+	constructor: (@name, @initialNodeIdx, @leaveHouseDots, @minFollowDist, @colour, @isPacman, @moveAlgo, @ghostHouseNode, @spideyWall, @spideyAppUI) ->
 		@curLocation =
-			nodeIdx: @initialNodeIdx
+			nodeIdx: if @isPacman then @initialNodeIdx else @ghostHouseNode
 			linkIdx: -1
 			linkStep: 0
 			stepSize: 1
 		@userReqdDirection = 0
 		@angleOfTravel = 0
 		@spriteSizePx = 25
+		@isVisible = @isPacman
+		@dotsEatenWhenLastSentHome = 0
 		return
  
 	showInitially: () ->
@@ -19,8 +21,8 @@ class PacManSprite
 				<div id="sprite_#{@name}" style="position:absolute; visibility:hidden" >
 			        <svg viewBox="-140 -80 150 100" width="#{@spriteSizePx}px" height="#{@spriteSizePx}px">
 			            <path
-			           style="fill:#{@colour};stroke:#{@colour};stroke-width:14.39999962;
-			           				stroke-miterlimit:4;stroke-opacity:1"
+			           style="fill:#{@colour};stroke:#{@colour};stroke-width:0;
+			           				stroke-miterlimit:4;opacity:1.0"
 			           d="m 0,0 
 			              c -16.86408,33.1589 -57.645487,46.4843 -91.087814,29.7632 -33.44233,-16.7212 -46.8816569,-57.157 -30.017575,-90.3159 16.864081,-33.1589 57.645482,-46.4844 91.087819,-29.7632 12.54879,6.2744 22.82161,16.2595 29.39805,28.5746
 			           	  l -69.792329,31.4649 z"
@@ -33,8 +35,8 @@ class PacManSprite
 				<div id="sprite_#{@name}" style="position:absolute; visibility:hidden">
 			        <svg viewBox="-10 -100 170 100" width="#{@spriteSizePx}px" height="#{@spriteSizePx}px">
 			            <path
-			           style="fill:#{@colour};stroke:#{@colour};stroke-width:14.39999962;
-			           				stroke-miterlimit:4;stroke-opacity:1"
+			           style="fill:#{@colour};stroke:#{@colour};stroke-width:0;
+			           				stroke-miterlimit:4;opacity:0.9"
 			           d="m 0,0 
 			              c -5.49953,-27.1434 1.05933,-123.834 67.82924,-122.9885 66.7699,0.8455 73.54087,94.0287 71.25122,121.2808 -2.28965,27.2521 -9.83924,20.9719 -14.93596,18.3842 -5.09672,-2.5877 -16.08257,-16.6765 -26.44335,-16.6765 -10.36078,0 -13.51175,15.1164 -24.13793,16.092 -10.62618,0.9756 -22.16027,-14.3948 -32.18391,-13.7931 -10.02364,0.6017 -16.62397,9.2152 -21.83908,12.6437 -5.21511,3.4285 -14.0407,12.2008 -19.54023,-14.9426 z"
 			           />
@@ -56,7 +58,7 @@ class PacManSprite
 		@updateUI()
 		return
 
-	updateUI: () ->
+	updateUI: (gameMode) ->
 		# Clear previous
 		# if @oldLocation?
 		# 	if @oldLocation.linkIdx < 0
@@ -77,9 +79,12 @@ class PacManSprite
 			# Get position on UI
 			spriteXY = @spideyAppUI.getPositionOfSprite(xyPos)
 			$("#sprite_#{@name}").css
-				"visibility":'visible'
+				"visibility": if @isVisible then 'visible' else 'hidden'
 				"top": spriteXY.y - @spriteSizePx/2 + "px"
 				"left": spriteXY.x - @spriteSizePx/2 + "px"
+			if not @isPacman and gameMode?
+				$("#sprite_#{@name} svg path").css
+					"fill": if gameMode is 'frightened' then 'purple' else @colour
 
 			# canvas = document
 			# 	.getElementById("spideyCanvas")
@@ -96,22 +101,28 @@ class PacManSprite
 	angle: (x1, y1, x2, y2) ->
 		return Math.atan2(y2-y1, x2-x1) * 180 / Math.PI
 
+	sendBackHome: (dotsEaten) ->
+		@moveToNode(@ghostHouseNode)
+		@isVisible = false
+		@dotsEatenWhenLastSentHome = dotsEaten
+		return
+
 	moveToNode: (nodIdx) ->
 		@curLocation.nodeIdx = nodIdx
 		@curLocation.linkIdx = -1
 		@curLocation.linkStep = 0
+		return
 
 	getPositionXY: (sprite) ->
 		if not sprite?
 			sprite = this
-		xyPos = null
-		if sprite.curLocation.linkIdx < 0
-			xyPos = @spideyWall.getNodeXY(sprite.curLocation.nodeIdx)
-		else
-			xyPos = @spideyWall.getLinkCofG(sprite.curLocation.nodeIdx, sprite.curLocation.linkIdx, sprite.curLocation.linkStep)
-		if not xyPos?
-			debugger
+		xyPos = @spideyWall.getPositionXY(sprite.curLocation.nodeIdx, sprite.curLocation.linkIdx, sprite.curLocation.linkStep)
 		return xyPos
+
+	getPositionPointIdx: (sprite) ->
+		if not sprite?
+			sprite = this
+		return @spideyWall.getPositionPointIdx(sprite.curLocation.nodeIdx, sprite.curLocation.linkIdx, sprite.curLocation.linkStep)
 
 	movePacman: () ->
 
@@ -183,75 +194,97 @@ class PacManSprite
 				@curLocation.linkStep = 0
 		return
 
-	moveGhost: (pacmanChomper, blinkyGhost) ->
-		@copyLocation()
+	moveGhost: (gameMode, pacmanChomper, blinkyGhost, dotsEaten) ->
+		# Check if pacman should be made visible
+		if not @isVisible
+			# Based on number of dots eaten
+			if dotsEaten - @dotsEatenWhenLastSentHome > @leaveHouseDots
+				@isVisible = true
+				console.log "DotsEaten " + dotsEaten + " make " + @name + " visisble"
+			else
+				return false
+
+		# Check if ghost is at same location as pacman
+		if @getPositionPointIdx(pacmanChomper) is @getPositionPointIdx()
+			return true
+
 		# Check if we're at a node (linkIdx == -1)
+		@copyLocation()
 		if @curLocation.linkIdx < 0
 			# Get Pacman location
 			pacmanXY = @getPositionXY(pacmanChomper)
-			# Blinky (red) goes straight for pacman
 			targetXY =
 				x: pacmanXY.x
 				y: pacmanXY.y
-			# Pinky (pink) goes for 4 steps ahead
-			if @moveAlgo is 1
-				numStepsAhead = 4
-				theta = pacmanChomper.angleOfTravel * Math.PI / 180
-				# angles are measured clockwise from East
-				x = Math.cos(theta) * numStepsAhead * @spideyWall.getStepDist()
-				y = Math.sin(theta) * numStepsAhead * @spideyWall.getStepDist()
-				targetXY.x += x
-				targetXY.y += y
-			# Inky targets a square which lies 2x a vector between Blinky and two steps ahead of pacman
-			# Described here http://gameinternals.com/post/2072558330/understanding-pac-man-ghost-behavior
-			if @moveAlgo is 2
-				numStepsAhead = 2
-				theta = pacmanChomper.angleOfTravel * Math.PI / 180
-				# angles are measured clockwise from East
-				x = pacmanXY.x + Math.cos(theta) * numStepsAhead * @spideyWall.getStepDist()
-				y = pacmanXY.y + Math.sin(theta) * numStepsAhead * @spideyWall.getStepDist()
-				# Blinky angle
-				blinkyPos = @getPositionXY(blinkyGhost)
-				targetXY =
-					x: blinkyPos.x + (x - blinkyPos.x) * 2
-					y: blinkyPos.y + (y - blinkyPos.y) * 2
-			# Clyde targets the same location as Blinky unless he's within a certain distance of
-			# Pacman in which case he heads to his home node
-			if @moveAlgo is 3
-				ownXY = @getPositionXY()
-				distFromPacman = Math.sqrt(Math.pow(pacmanXY.x-ownXY.x,2)+Math.pow(pacmanXY.y-ownXY.y,2))
-				if distFromPacman < @minFollowDist * @spideyWall.getStepDist()
-					targetXY = @spideyWall.getNodeXY(@initialNodeIdx)
-				# 	console.log "Clyde TOO CLOSE"
-				# console.log "dist " + distFromPacman + " min " + @minFollowDist * @spideyWall.getStepDist()
+			# Check game mode
+			if gameMode is 'scatter'
+				targetXY = @spideyWall.getNodeXY(@initialNodeIdx)
+			else if gameMode is 'frightened'
+				numLinks = @spideyWall.getNumLinks(@curLocation.nodeIdx)
+				linkIdx = Math.floor(Math.random() * numLinks)
+				linkTarget = @spideyWall.getLinkTarget(@curLocation.nodeIdx, linkIdx)
+				targetXY = @spideyWall.getNodeXY(linkTarget)
+			else if gameMode is 'chase'
+				# Blinky (red) goes straight for pacman
+				# Pinky (pink) goes for 4 steps ahead
+				if @moveAlgo is 1
+					numStepsAhead = 4
+					theta = pacmanChomper.angleOfTravel * Math.PI / 180
+					# angles are measured clockwise from East
+					x = Math.cos(theta) * numStepsAhead * @spideyWall.getStepDist()
+					y = Math.sin(theta) * numStepsAhead * @spideyWall.getStepDist()
+					targetXY.x += x
+					targetXY.y += y
+				# Inky targets a square which lies 2x a vector between Blinky and two steps ahead of pacman
+				# Described here http://gameinternals.com/post/2072558330/understanding-pac-man-ghost-behavior
+				if @moveAlgo is 2
+					numStepsAhead = 2
+					theta = pacmanChomper.angleOfTravel * Math.PI / 180
+					# angles are measured clockwise from East
+					x = pacmanXY.x + Math.cos(theta) * numStepsAhead * @spideyWall.getStepDist()
+					y = pacmanXY.y + Math.sin(theta) * numStepsAhead * @spideyWall.getStepDist()
+					# Blinky angle
+					blinkyPos = @getPositionXY(blinkyGhost)
+					targetXY =
+						x: blinkyPos.x + (x - blinkyPos.x) * 2
+						y: blinkyPos.y + (y - blinkyPos.y) * 2
+				# Clyde targets the same location as Blinky unless he's within a certain distance of
+				# Pacman in which case he heads to his home node
+				if @moveAlgo is 3
+					ownXY = @getPositionXY()
+					distFromPacman = Math.sqrt(Math.pow(pacmanXY.x-ownXY.x,2)+Math.pow(pacmanXY.y-ownXY.y,2))
+					if distFromPacman < @minFollowDist * @spideyWall.getStepDist()
+						targetXY = @spideyWall.getNodeXY(@initialNodeIdx)
+					# 	console.log "Clyde TOO CLOSE"
+					# console.log "dist " + distFromPacman + " min " + @minFollowDist * @spideyWall.getStepDist()
 
-				# console.log "dirn " + pacmanChomper.angleOfTravel + " x " + pacmanXY.x + " " + targetXY.x
-				# console.log "dirn " + pacmanChomper.angleOfTravel + " y " + pacmanXY.y + " " + targetXY.y
+					# console.log "dirn " + pacmanChomper.angleOfTravel + " x " + pacmanXY.x + " " + targetXY.x
+					# console.log "dirn " + pacmanChomper.angleOfTravel + " y " + pacmanXY.y + " " + targetXY.y
 
-				# canvas = document
-				# 	.getElementById("spideyCanvas")
-				# 	.getContext("2d")
+					# canvas = document
+					# 	.getElementById("spideyCanvas")
+					# 	.getContext("2d")
 
-				# canvas.fillStyle = "white"
+					# canvas.fillStyle = "white"
 
-				# canvas.lineWidth = 3
-				# canvas.strokeStyle = "green"
-				# canvas.beginPath()
-				# aXY = @spideyAppUI.getPositionOfSprite(pacmanXY)
-				# canvas.moveTo(aXY.x, aXY.y)
-				# aXY = @spideyAppUI.getPositionOfSprite(targetXY)
-				# canvas.lineTo(aXY.x, aXY.y)
-				# canvas.closePath()
-				# canvas.stroke()
-				# debugger
-				# canvas.fillStyle = "red"
-				# canvas.fillRect(targetXY.x, targetXY.y, 10, 10)
-				# canvas.fillRect(targetXY.x, targetXY.y, 10, 10)
+					# canvas.lineWidth = 3
+					# canvas.strokeStyle = "green"
+					# canvas.beginPath()
+					# aXY = @spideyAppUI.getPositionOfSprite(pacmanXY)
+					# canvas.moveTo(aXY.x, aXY.y)
+					# aXY = @spideyAppUI.getPositionOfSprite(targetXY)
+					# canvas.lineTo(aXY.x, aXY.y)
+					# canvas.closePath()
+					# canvas.stroke()
+					# debugger
+					# canvas.fillStyle = "red"
+					# canvas.fillRect(targetXY.x, targetXY.y, 10, 10)
+					# canvas.fillRect(targetXY.x, targetXY.y, 10, 10)
 
 			# Find ghost target location
 			minDist = 100000
 			bestLinkIdx = 0
-			# console.log "BaddieAtnode " + @curLocation.nodeIdx + " numlinks " + @spideyWall.getNumLinks(@curLocation.nodeIdx) + "Me " + meXY.x + " " + meXY.y
+			# console.log "ghostatnode " + @curLocation.nodeIdx + " numlinks " + @spideyWall.getNumLinks(@curLocation.nodeIdx) + "Me " + meXY.x + " " + meXY.y
 			for linkIdx in [0...@spideyWall.getNumLinks(@curLocation.nodeIdx)]
 				linkTarget = @spideyWall.getLinkTarget(@curLocation.nodeIdx, linkIdx)
 				linkTargetXY = @spideyWall.getNodeXY(linkTarget)
@@ -269,4 +302,9 @@ class PacManSprite
 				@curLocation.nodeIdx = @spideyWall.getLinkTarget(@curLocation.nodeIdx, @curLocation.linkIdx)
 				@curLocation.linkIdx = -1
 				@curLocation.linkStep = 0
-		return
+
+		# Check if ghost is at same location as pacman
+		if @getPositionPointIdx(pacmanChomper) is @getPositionPointIdx()
+			return true
+
+		return false

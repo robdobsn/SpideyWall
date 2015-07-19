@@ -118,6 +118,9 @@ SpideyWall = (function() {
     node = this.spideyGeometry.nodes[nodeIdx];
     linkIdx = node.linkIdxs[nodeLinkIdx];
     link = this.spideyGeometry.links[linkIdx];
+    if ((link == null) || (link.target == null)) {
+      debugger;
+    }
     return link.target;
   };
 
@@ -167,6 +170,37 @@ SpideyWall = (function() {
     }
     console.log("nodXy " + this.getNodeXY(bestIdx).x + " " + this.getNodeXY(bestIdx).y);
     return bestIdx;
+  };
+
+  SpideyWall.prototype.getPositionXY = function(nodeIdx, nodeLinkIdx, linkStep) {
+    var xyPos;
+    xyPos = null;
+    if (nodeLinkIdx < 0) {
+      xyPos = this.getNodeXY(nodeIdx);
+    } else {
+      xyPos = this.getLinkCofG(nodeIdx, nodeLinkIdx, linkStep);
+    }
+    if (xyPos == null) {
+      debugger;
+    }
+    return xyPos;
+  };
+
+  SpideyWall.prototype.getPositionPointIdx = function(nodeIdx, nodeLinkIdx, linkStep) {
+    var link, linkIdx, node;
+    if (nodeLinkIdx < 0) {
+      if (this.spideyGeometry.nodes[nodeIdx].pointIdx == null) {
+        debugger;
+      }
+      return this.spideyGeometry.nodes[nodeIdx].pointIdx;
+    }
+    node = this.spideyGeometry.nodes[nodeIdx];
+    linkIdx = node.linkIdxs[nodeLinkIdx];
+    link = this.spideyGeometry.links[linkIdx];
+    if (link.pointIdxs[linkStep] == null) {
+      return node.pointIdx;
+    }
+    return link.pointIdxs[linkStep];
   };
 
   SpideyWall.prototype.generatePointInfo = function() {

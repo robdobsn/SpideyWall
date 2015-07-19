@@ -2,8 +2,7 @@
 var SpideyGame_PacMan,
   __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; },
   __hasProp = {}.hasOwnProperty,
-  __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
-  __indexOf = [].indexOf || function(item) { for (var i = 0, l = this.length; i < l; i++) { if (i in this && this[i] === item) return i; } return -1; };
+  __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
 
 SpideyGame_PacMan = (function(_super) {
   __extends(SpideyGame_PacMan, _super);
@@ -21,8 +20,16 @@ SpideyGame_PacMan = (function(_super) {
     this.step = __bind(this.step, this);
     this.resizeCallback = __bind(this.resizeCallback, this);
     SpideyGame_PacMan.__super__.constructor.call(this, "PacMan", "pacman.svg");
-    this.pacmanSprite = new PacManSprite("pacman", 43, 0, 0, "#ffee00", true, 0, this.spideyWall, this.spideyAppUI);
-    this.ghostSprites = [new PacManSprite("blinky", 73, 0, 0, "#ff0000", false, 0, this.spideyWall, this.spideyAppUI), new PacManSprite("pinky", 79, 5, 0, "#ffc0cb", false, 1, this.spideyWall, this.spideyAppUI), new PacManSprite("inky", 70, 30, 0, "#00bfff", false, 2, this.spideyWall, this.spideyAppUI), new PacManSprite("clyde", 40, this.spideyWall.getNumPoints() / 3, 20, "#ff8000", false, 3, this.spideyWall, this.spideyAppUI)];
+    this.ghostHouseNode = 1;
+    this.initGame();
+    return;
+  }
+
+  SpideyGame_PacMan.prototype.initGame = function() {
+    var numDots;
+    this.pacmanSprite = new PacManSprite("pacman", 43, 0, 0, "#ffee00", true, 0, this.ghostHouseNode, this.spideyWall, this.spideyAppUI);
+    numDots = this.spideyWall.getNumPoints();
+    this.ghostSprites = [new PacManSprite("blinky", 73, 0, 0, "#ff0000", false, 0, this.ghostHouseNode, this.spideyWall, this.spideyAppUI), new PacManSprite("pinky", 79, numDots / 30, 0, "#ffc0cb", false, 1, this.ghostHouseNode, this.spideyWall, this.spideyAppUI), new PacManSprite("inky", 70, numDots / 10, 0, "#00bfff", false, 2, this.ghostHouseNode, this.spideyWall, this.spideyAppUI), new PacManSprite("clyde", 40, numDots / 3, 20, "#ff8000", false, 3, this.ghostHouseNode, this.spideyWall, this.spideyAppUI)];
     this.pillPositions = [
       {
         type: 1,
@@ -50,15 +57,23 @@ SpideyGame_PacMan = (function(_super) {
         linkStep: 0
       }
     ];
-    this.ghostHouseNode = 1;
-    this.generateGameDots();
-    this.pacManDots = new PacManDots(this.gameDots, 5, this.spideyWall, this.spideyAppUI);
+    this.pacManDots = new PacManDots(this.pillPositions, 5, 1, this.spideyWall, this.spideyAppUI);
     this.spideyAppUI.setResizeCallback(this.resizeCallback);
-    return;
-  }
+    this.gameMode = 'scatter';
+    this.gameCounter = 0;
+    this.scatterInterval = 50;
+    this.frightenedInterval = 200;
+    this.ghostsEatenScore = 0;
+    this.initGhostEatScore = 100;
+    this.nextGhostEatScore = this.initGhostEatScore;
+    this.scoreForDot = 10;
+  };
 
-  SpideyGame_PacMan.prototype.go = function() {
+  SpideyGame_PacMan.prototype.go = function(restart) {
     var ghost, _i, _len, _ref;
+    if (restart) {
+      this.initGame();
+    }
     this.spideyAppUI.showGameUI(true);
     this.spideyAppUI.setDirectionCallback(this.directionCallback);
     _ref = this.ghostSprites;
@@ -68,34 +83,13 @@ SpideyGame_PacMan = (function(_super) {
     }
     this.pacmanSprite.showInitially();
     this.pacManDots.showInitially();
-    this.gameTimer = setInterval(this.step, 50);
+    this.gameTimer = setInterval(this.step, 150);
     $("#spriteOverlay").on("mousemove", this.mouseMoveTest);
     $("#spriteOverlay").on("mousedown", this.mouseDownTest);
   };
 
-  SpideyGame_PacMan.prototype.generateGameDots = function() {
-    var dotType, pillIdx, pillPt, point, pointIdx, tmpPillPoints, _i, _j, _len, _len1, _ref, _ref1;
-    tmpPillPoints = [];
-    _ref = this.pillPositions;
-    for (pillIdx = _i = 0, _len = _ref.length; _i < _len; pillIdx = ++_i) {
-      pillPt = _ref[pillIdx];
-      tmpPillPoints.push(pillPt.pointIdx);
-    }
-    this.gameDots = [];
-    _ref1 = this.spideyWall.getPoints();
-    for (pointIdx = _j = 0, _len1 = _ref1.length; _j < _len1; pointIdx = ++_j) {
-      point = _ref1[pointIdx];
-      dotType = 0;
-      pillIdx = -1;
-      if (__indexOf.call(tmpPillPoints, pointIdx) >= 0) {
-        pillIdx = tmpPillPoints.indexOf(pointIdx);
-        dotType = this.pillPositions[pillIdx];
-      }
-      this.gameDots.push({
-        dotType: dotType,
-        pillIdx: pillIdx
-      });
-    }
+  SpideyGame_PacMan.prototype.stop = function() {
+    clearInterval(this.gameTimer);
   };
 
   SpideyGame_PacMan.prototype.resizeCallback = function() {
@@ -114,20 +108,67 @@ SpideyGame_PacMan = (function(_super) {
     _ref = this.ghostSprites;
     for (_i = 0, _len = _ref.length; _i < _len; _i++) {
       ghost = _ref[_i];
-      ghost.updateUI();
+      ghost.updateUI(this.gameMode);
     }
-    this.pacmanSprite.updateUI();
+    this.pacmanSprite.updateUI(this.gameMode);
   };
 
   SpideyGame_PacMan.prototype.step = function() {
-    var ghost, _i, _len, _ref;
+    var collision, dotType, ghost, _i, _len, _ref;
     this.pacmanSprite.movePacman();
+    dotType = this.pacManDots.beEaten(this.pacmanSprite.getPositionPointIdx());
+    if (dotType !== 0) {
+      if (this.gameMode !== 'frightened') {
+        this.prevGameMode = this.gameMode;
+        this.nextGhostEatScore = this.initGhostEatScore;
+      }
+      this.gameMode = 'frightened';
+      this.gameCounter = 0;
+      console.log('FRIGHTENED');
+    }
     _ref = this.ghostSprites;
     for (_i = 0, _len = _ref.length; _i < _len; _i++) {
       ghost = _ref[_i];
-      ghost.moveGhost(this.pacmanSprite, this.ghostSprites[0]);
+      collision = ghost.moveGhost(this.gameMode, this.pacmanSprite, this.ghostSprites[0], this.pacManDots.getDotsEaten());
+      if (collision) {
+        if (this.gameMode === 'frightened') {
+          this.ghostsEatenScore += this.nextGhostEatScore;
+          this.nextGhostEatScore = this.nextGhostEatScore * 2;
+          ghost.sendBackHome(this.pacManDots.getDotsEaten());
+        } else {
+          this.stop();
+          this.spideyAppUI.showGameOver();
+        }
+      }
     }
     this.updateSprites();
+    this.updateScore();
+    this.gameCounter++;
+    if (this.gameMode === 'frightened') {
+      if (this.gameCounter > this.frightenedInterval) {
+        this.gameCounter = 0;
+        this.gameMode = this.prevGameMode;
+        console.log(this.gameMode);
+      }
+    } else {
+      if (this.gameCounter % this.scatterInterval === 0) {
+        if (this.gameMode === 'scatter') {
+          this.gameMode = 'chase';
+          console.log("CHASE");
+        } else {
+          this.gameMode = 'scatter';
+          console.log("SCATTER");
+        }
+        this.gameCounter = 0;
+      }
+    }
+  };
+
+  SpideyGame_PacMan.prototype.updateScore = function() {
+    var curScore;
+    curScore = this.pacManDots.getDotsEaten() * this.scoreForDot;
+    curScore += this.ghostsEatenScore;
+    return $("#gameScore").text(curScore.toString());
   };
 
   SpideyGame_PacMan.prototype.directionCallback = function(param) {
@@ -187,7 +228,7 @@ SpideyGame_PacMan = (function(_super) {
     nodIdx = this.spideyWall.getNodeNearXY(xySpidey.x, xySpidey.y);
     console.log("X " + xySpidey.x + " Y " + xySpidey.y + " idx " + nodIdx);
     this.pacmanSprite.moveToNode(nodIdx);
-    this.pacmanSprite.updateUI();
+    this.pacmanSprite.updateUI(this.gameMode);
     numLinks = this.spideyWall.getNumLinks(nodIdx);
     for (lidx = _i = 0; 0 <= numLinks ? _i < numLinks : _i > numLinks; lidx = 0 <= numLinks ? ++_i : --_i) {
       console.log(this.spideyWall.getLinkAngle(nodIdx, lidx, 1));

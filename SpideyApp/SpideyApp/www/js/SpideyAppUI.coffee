@@ -15,14 +15,23 @@ class SpideyAppUI
 		# Direction the joystick is pointing
 		@curJoystickDirn = null
 		@curJoystickDist = 0
+		# Handler for orientation change
+		$(window).on 'orientationchange', =>
+		  @rebuildUI()
+		# And resize event
+		$(window).on 'resize', =>
+		  @rebuildUI()		
 
-	init: (@spideyWall) ->
+	init: (@spideyWall, @restartCallback) ->
 		# CSS for black background
 		$("html").css
 			background: "#000000"
 		# Basic body for DOM
+		$("#gameArea").remove()
 		$("body").prepend """
 			<div id="gameArea">
+				<div id="gameScore"
+					style="position: absolute; left: 420px; border: 50px; color:white; z-index: 10; "></div>
 		        <canvas id="spideyCanvas" 
 		        	style="position: absolute; left: 0px; border: 0px; "></canvas>
 				<div id="spriteOverlay" 
@@ -37,13 +46,6 @@ class SpideyAppUI
 		@canvas = document
 			.getElementById("spideyCanvas")
 			.getContext("2d")
-	
-		# Handler for orientation change
-		$(window).on 'orientationchange', =>
-		  @rebuildUI()
-		# And resize event
-		$(window).on 'resize', =>
-		  @rebuildUI()
 
 		# Setup initial UI
 		@rebuildUI()
@@ -99,8 +101,6 @@ class SpideyAppUI
 		# Callback to allow other game elements to resize
 		if @resizeCallback?
 			@resizeCallback()
-
-
 
 		# TEST TEST
 		if testtest?
@@ -218,3 +218,32 @@ class SpideyAppUI
 			# for link in @spideyWall.getLinks()
 			# 	@canvas.fillStyle = "green"
 			# 	@canvas.fillRect(link.xSource *  @scaleFactorX, link.ySource * @scaleFactorY, 2, 2)
+		return 
+
+	showGameOver: () ->
+		popWid = @canvasWidth/2
+		popHig = @canvasHeight/10
+		popTop = @canvasTop + @canvasHeight/3-popHig/2
+		popLeft = @canvasLeft + @canvasWidth/2-popWid/2
+		$("body").append """
+			<div id="gameoverpopup" style="display:block; opacity:1;
+		        position: absolute;
+		        width: #{popWid}px;
+		        height: #{popHig}px;
+		        background: #000000;
+		        color: yellow;
+		        border: 10px solid yellow;
+		        border-radius: 10px;
+		        padding: 15px 17px;
+		        margin: 10% auto;
+		        top: #{popTop}px;
+		        left: #{popLeft}px;">
+				<div style="text-align: center">
+					<img width="100%" height="100%" src="img/gameoverplayagain.png" style=""></img>
+				</div>
+			</div>
+			"""
+		$("#gameoverpopup").on "click", =>
+			$("#gameoverpopup").remove()
+			@restartCallback()
+		return
