@@ -16,7 +16,7 @@ class PacManDots
 		points = @spideyWall.getPoints()
 		for dot, dotIdx in @gameDots
 			dotColor = if dot.dotType is 0 then "white" else "magenta"
-			dotSz = if dot.dotType is 0 then @dotSize else @dotSize*2
+			dotSz = if dot.dotType is 0 then @dotSize else @dotSize*3
 			dotSzD2 = dotSz/2
 			dotPoint = points[dotIdx]
 			spriteXY = @spideyAppUI.getPositionOfSprite(dotPoint)
@@ -35,7 +35,6 @@ class PacManDots
 				$("#dot_#{dotIdx}").css
 					top: spriteXY.y
 					left: spriteXY.x
-			console.log "pt " + spriteXY.x + " " + spriteXY.y
 		return
 
 	getDotsEaten: () ->

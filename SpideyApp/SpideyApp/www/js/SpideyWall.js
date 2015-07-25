@@ -5,8 +5,30 @@ var SpideyWall,
 SpideyWall = (function() {
   function SpideyWall() {
     this.spideyGeometry = window.SpideyGeometry;
-    this.wrapAroundNodeIdxs = null;
     this.pointsInGeometry = this.generatePointInfo();
+    this.wrapAroundNodeIdxs = null;
+    this.wrapAroundNodes = {
+      79: 73,
+      73: 79,
+      77: 75,
+      75: 77,
+      61: 69,
+      69: 61,
+      60: 68,
+      68: 60,
+      76: 78,
+      78: 76,
+      74: 62,
+      62: 74,
+      65: 63,
+      63: 65,
+      64: 72,
+      72: 64,
+      71: 63,
+      66: 72,
+      67: 72,
+      70: 60
+    };
   }
 
   SpideyWall.prototype.getLinks = function() {
@@ -22,6 +44,13 @@ SpideyWall = (function() {
   };
 
   SpideyWall.prototype.getWrapNodeIdx = function(nodeIdx) {
+    if (nodeIdx in this.wrapAroundNodes) {
+      return this.wrapAroundNodes[nodeIdx];
+    }
+    return this.getRandomEdgeNodeIdx(nodeIdx);
+  };
+
+  SpideyWall.prototype.getRandomEdgeNodeIdx = function(nodeIdx) {
     var nod, nodIdx, randElem, _i, _len, _ref;
     if (this.wrapAroundNodeIdxs == null) {
       this.wrapAroundNodeIdxs = [];
@@ -168,7 +197,6 @@ SpideyWall = (function() {
         bestIdx = nodIdx;
       }
     }
-    console.log("nodXy " + this.getNodeXY(bestIdx).x + " " + this.getNodeXY(bestIdx).y);
     return bestIdx;
   };
 
@@ -267,6 +295,10 @@ SpideyWall = (function() {
       }
     }
     return bestIdx;
+  };
+
+  SpideyWall.prototype.dist = function(pt1, pt2) {
+    return Math.sqrt(Math.pow(pt1.x - pt2.x, 2) + Math.pow(pt1.y - pt2.y, 2));
   };
 
   return SpideyWall;

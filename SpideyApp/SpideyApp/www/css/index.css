@@ -10,8 +10,17 @@
   -moz-box-sizing: border-box;
   -webkit-box-sizing: border-box;
   box-sizing: border-box;
+    -webkit-tap-highlight-color: rgba(0,0,0,0); /* make transparent link selection, adjust last value opacity 0 to 1.0 */
 }
-body, html { margin: 0px;}
+body, html {
+   margin: 0px;
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  -khtml-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+  }
 html {
   font-family: 'Audiowide', Segoe UI, Verdana, Tahoma, Helvetica, sans-serif;
   font-size: 16px;
@@ -38,16 +47,6 @@ body {
   min-height: 90%;
   width: auto;
 }
-#sqWrapper {
-  margin: 0;
-  padding: 0;
-  position: relative;
-  z-index: 0;
-}
-#sqTileWrapper {
-  position: relative;
-  padding: 0px 15px 0px 15px;
-}
 /*@font-face {
     font-family: 'BebasNeueRegular';
     src: url('BebasNeue-webfont.eot');
@@ -59,125 +58,18 @@ body {
     font-style: normal;
 }
 */
-.sqTileContainer {
-  display: none;
-  position: relative;
-  font-weight: normal;
-  margin-top: 10px;
+@keyframes fade {
+    from { opacity: 1.0; }
+    50% { opacity: 0.4; }
+    to { opacity: 1.0; }
 }
-.sqTile {
-  position: absolute;
-  background-color: Green;
-  color: #e8e8e8;
-  overflow: hidden;
-  cursor: pointer;
-  text-decoration: none !important;
+ 
+@-webkit-keyframes fade {
+    from { opacity: 1.0; }
+    50% { opacity: 0.4; }
+    to { opacity: 1.0; }
 }
-.sqGroupTitle {
-  position: absolute;
-  color: yellow;
-  padding-left: 15px;
-  width: 100%;
-}
-.sqGroups {
-  padding-left: 15px;
-}
-.sqInner {
-  padding: 1px;
-  line-height: 1;
-  padding-top: 0.7em;
-  -webkit-touch-callout: none;
-  -webkit-user-select: none;
-  -khtml-user-select: none;
-  -moz-user-select: none;
-  -ms-user-select: none;
-  user-select: none;
-}
-.sqClockDow,
-.sqClockDayMonthYear {
-  text-align: center;
-  font-size: 300%;
-}
-ul.sqClockTime {
-  margin: 0 auto;
-  padding: 0px;
-  list-style: none;
-  text-align: center;
-}
-ul.sqClockTime li {
-  display: inline;
-  font-size: 900%;
-}
-ul.sqClockTime li.sqClockSecs {
-  display: inline;
-  font-size: 100%;
-  position: absolute;
-}
-ul.sqClockTime li.sqClockPoint1,
-ul.sqClockTime li.sqClockPoint2 {
-  position: relative;
-  -moz-animation: mymove 1s ease infinite;
-  -webkit-animation: mymove 1s ease infinite;
-}
-ul.sqClockTime li.sqClockPoint2 {
-  font-size: 200%;
-  display: none;
-}
-ul.sqCalEvents {
-  font-family: Verdana, Tahoma, Helvetica, sans-serif;
-  margin: 0 auto 10px 10px;
-  padding: 0px;
-  list-style: none;
-  font-size: 250%;
-}
-.sqCalTitle {
-  position: absolute;
-  bottom: 0;
-  right: 0;
-  font-size: 1rem;
-  padding: 5px;
-  color: black;
-}
-/* Simple Animation */
-@-webkit-keyframes mymove {
-  0% {
-    opacity: 1.0;
-  }
-  50% {
-    opacity: 0;
-    text-shadow: none;
-  }
-  100% {
-    opacity: 1.0;
-    text-shadow: 0 0 10px #ffffff;
-  }
-}
-@-moz-keyframes mymove {
-  0% {
-    opacity: 1.0;
-    text-shadow: 0 0 10px #ffffff;
-  }
-  50% {
-    opacity: 0;
-    text-shadow: none;
-  }
-  100% {
-    opacity: 1.0;
-    text-shadow: 0 0 10px #ffffff;
-  }
-}
-.sqSceneButtonIcon img {
-  display: block;
-  margin-left: auto;
-  margin-right: auto;
-  margin-top: .5em;
-}
-.sqSceneButtonText {
-  font-size: 250%;
-  margin-top: 0.2em;
-  margin-left: 0.2em;
-}
-#tabnameform {
+#spideyipform {
     position:fixed;
     top: 50%;
     left: 50%;
@@ -191,14 +83,14 @@ ul.sqCalEvents {
     font-family: Arial, Helvetica, sans-serif;
     font-size: 25px;
 }
-#tabnameform p {
+#spideyipform p {
   text-align: center;
 }
-#tabnameform input {
+#spideyipform input {
   margin: 10px;
   font-size: 25px;
 }
-#tabnameform button {
+#spideyipform button {
   text-align: center;
   margin: 0 auto;
   width: 3em;

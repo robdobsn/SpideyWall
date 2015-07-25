@@ -4,8 +4,29 @@ class SpideyWall
 
 	constructor: () ->
 		@spideyGeometry = window.SpideyGeometry
-		@wrapAroundNodeIdxs = null
 		@pointsInGeometry = @generatePointInfo()
+		@wrapAroundNodeIdxs = null
+		@wrapAroundNodes =
+			79: 73
+			73: 79
+			77: 75
+			75: 77
+			61: 69
+			69: 61
+			60: 68
+			68: 60
+			76: 78
+			78: 76
+			74: 62
+			62: 74
+			65: 63
+			63: 65
+			64: 72
+			72: 64
+			71: 63
+			66: 72
+			67: 72
+			70: 60
 
 	# Access methods to get information about the geometry
 
@@ -19,6 +40,11 @@ class SpideyWall
 		return @pointsInGeometry.length		
 
 	getWrapNodeIdx: (nodeIdx) ->
+		if nodeIdx of @wrapAroundNodes
+			return @wrapAroundNodes[nodeIdx]
+		return @getRandomEdgeNodeIdx(nodeIdx)
+
+	getRandomEdgeNodeIdx: (nodeIdx) ->
 		if not @wrapAroundNodeIdxs?
 			@wrapAroundNodeIdxs = []
 			for nod, nodIdx in @spideyGeometry.nodes
@@ -115,7 +141,7 @@ class SpideyWall
 			if bestDist > dist
 				bestDist = dist
 				bestIdx = nodIdx
-		console.log "nodXy " + @getNodeXY(bestIdx).x + " " + @getNodeXY(bestIdx).y
+		# console.log "nodXy " + @getNodeXY(bestIdx).x + " " + @getNodeXY(bestIdx).y
 		return bestIdx
 
 	getPositionXY: (nodeIdx, nodeLinkIdx, linkStep) ->
@@ -196,3 +222,6 @@ class SpideyWall
 				bestDist = dist
 				bestIdx = ptIdx
 		return bestIdx
+
+	dist: (pt1, pt2) ->
+		return Math.sqrt(Math.pow(pt1.x - pt2.x, 2) + Math.pow(pt1.y - pt2.y, 2))

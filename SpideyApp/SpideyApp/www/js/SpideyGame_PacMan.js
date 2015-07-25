@@ -14,6 +14,11 @@ SpideyGame_PacMan = (function(_super) {
     this.exitClick = __bind(this.exitClick, this);
     this.mouseDownTest = __bind(this.mouseDownTest, this);
     this.mouseMoveTest = __bind(this.mouseMoveTest, this);
+    this.touchEnd = __bind(this.touchEnd, this);
+    this.touchStart = __bind(this.touchStart, this);
+    this.touchMove = __bind(this.touchMove, this);
+    this.mouseDown = __bind(this.mouseDown, this);
+    this.mouseMove = __bind(this.mouseMove, this);
     this.testStart = __bind(this.testStart, this);
     this.stepTest = __bind(this.stepTest, this);
     this.directionCallback = __bind(this.directionCallback, this);
@@ -22,6 +27,8 @@ SpideyGame_PacMan = (function(_super) {
     SpideyGame_PacMan.__super__.constructor.call(this, "PacMan", "pacman.svg");
     this.ghostHouseNode = 1;
     this.initGame();
+    this.gameRunning = false;
+    this.lastMouseMoveTime = null;
     return;
   }
 
@@ -61,7 +68,8 @@ SpideyGame_PacMan = (function(_super) {
     this.spideyAppUI.setResizeCallback(this.resizeCallback);
     this.gameMode = 'scatter';
     this.gameCounter = 0;
-    this.scatterInterval = 50;
+    this.scatterOnTime = 20;
+    this.scatterOffTime = 50;
     this.frightenedInterval = 200;
     this.ghostsEatenScore = 0;
     this.initGhostEatScore = 100;
@@ -83,13 +91,18 @@ SpideyGame_PacMan = (function(_super) {
     }
     this.pacmanSprite.showInitially();
     this.pacManDots.showInitially();
-    this.gameTimer = setInterval(this.step, 150);
-    $("#spriteOverlay").on("mousemove", this.mouseMoveTest);
-    $("#spriteOverlay").on("mousedown", this.mouseDownTest);
+    this.gameTimer = setInterval(this.step, 100);
+    $("#spriteOverlay").on("mousemove", this.mouseMove);
+    $("#spriteOverlay").on("mousedown", this.mouseDown);
+    $("body").on("touchstart", this.touchStart);
+    $("body").on("touchmove", this.touchMove);
+    $("body").on("touchend", this.touchEnd);
+    this.gameRunning = true;
   };
 
   SpideyGame_PacMan.prototype.stop = function() {
     clearInterval(this.gameTimer);
+    this.gameRunning = false;
   };
 
   SpideyGame_PacMan.prototype.resizeCallback = function() {
@@ -108,13 +121,14 @@ SpideyGame_PacMan = (function(_super) {
     _ref = this.ghostSprites;
     for (_i = 0, _len = _ref.length; _i < _len; _i++) {
       ghost = _ref[_i];
-      ghost.updateUI(this.gameMode);
+      ghost.updateUI(this.gameMode, this.gameCounter, this.frightenedInterval);
     }
     this.pacmanSprite.updateUI(this.gameMode);
   };
 
   SpideyGame_PacMan.prototype.step = function() {
-    var collision, dotType, ghost, _i, _len, _ref;
+    var collision, dotType, ghost, inGameMode, _i, _len, _ref;
+    inGameMode = this.gameMode;
     this.pacmanSprite.movePacman();
     dotType = this.pacManDots.beEaten(this.pacmanSprite.getPositionPointIdx());
     if (dotType !== 0) {
@@ -124,7 +138,6 @@ SpideyGame_PacMan = (function(_super) {
       }
       this.gameMode = 'frightened';
       this.gameCounter = 0;
-      console.log('FRIGHTENED');
     }
     _ref = this.ghostSprites;
     for (_i = 0, _len = _ref.length; _i < _len; _i++) {
@@ -146,20 +159,20 @@ SpideyGame_PacMan = (function(_super) {
     this.gameCounter++;
     if (this.gameMode === 'frightened') {
       if (this.gameCounter > this.frightenedInterval) {
-        this.gameCounter = 0;
         this.gameMode = this.prevGameMode;
-        console.log(this.gameMode);
+        this.gameCounter = 0;
       }
     } else {
-      if (this.gameCounter % this.scatterInterval === 0) {
-        if (this.gameMode === 'scatter') {
+      if (this.gameMode === 'scatter') {
+        if (this.gameCounter > this.scatterOnTime) {
           this.gameMode = 'chase';
-          console.log("CHASE");
-        } else {
-          this.gameMode = 'scatter';
-          console.log("SCATTER");
+          this.gameCounter = 0;
         }
-        this.gameCounter = 0;
+      } else {
+        if (this.gameCounter > this.scatterOffTime) {
+          this.gameMode = 'scatter';
+          this.gameCounter = 0;
+        }
       }
     }
   };
@@ -168,15 +181,12 @@ SpideyGame_PacMan = (function(_super) {
     var curScore;
     curScore = this.pacManDots.getDotsEaten() * this.scoreForDot;
     curScore += this.ghostsEatenScore;
-    return $("#gameScore").text(curScore.toString());
+    $("#gameScore").text(curScore.toString());
   };
 
-  SpideyGame_PacMan.prototype.directionCallback = function(param) {
-    this.changeDirection(param);
-  };
-
-  SpideyGame_PacMan.prototype.mouseover = function(dirn) {
-    this.changeDirection(dirn);
+  SpideyGame_PacMan.prototype.directionCallback = function(direction, distance) {
+    this.changeDirection(direction);
+    this.spideyAppUI.updateJoystickBallUI(direction, distance);
   };
 
   SpideyGame_PacMan.prototype.changeDirection = function(dirn) {
@@ -203,6 +213,64 @@ SpideyGame_PacMan = (function(_super) {
     clearInterval(this.tmr);
   };
 
+  SpideyGame_PacMan.prototype.mouseMove = function(event) {
+    var now, swipeEnd;
+    now = new Date();
+    if (this.lastMouseMoveTime != null) {
+      if (now - this.lastMouseMoveTime > 100) {
+        this.swipeStart = {
+          x: event.pageX,
+          y: event.pageY
+        };
+      } else {
+        swipeEnd = {
+          x: event.originalEvent.pageX,
+          y: event.originalEvent.pageY
+        };
+        if ((this.swipeStart != null) && this.spideyWall.dist(this.swipeStart, swipeEnd) > 20) {
+          this.curReqdDirn = Math.atan2(swipeEnd.y - this.swipeStart.y, swipeEnd.x - this.swipeStart.x) * 180 / Math.PI;
+          this.directionCallback(this.curReqdDirn);
+        }
+      }
+    }
+    this.lastMouseMoveTime = now;
+  };
+
+  SpideyGame_PacMan.prototype.mouseDown = function(event) {};
+
+  SpideyGame_PacMan.prototype.touchMove = function(event) {
+    if (this.gameRunning) {
+      event.preventDefault();
+    }
+  };
+
+  SpideyGame_PacMan.prototype.touchStart = function(event) {
+    if (this.gameRunning) {
+      event.preventDefault();
+      if (event.originalEvent.touches.length === 1) {
+        this.swipeStart = {
+          x: event.originalEvent.touches[0].pageX,
+          y: event.originalEvent.touches[0].pageY
+        };
+      }
+    }
+  };
+
+  SpideyGame_PacMan.prototype.touchEnd = function(event) {
+    var swipeEnd;
+    if (this.gameRunning) {
+      if (this.swipeStart == null) {
+        return;
+      }
+      swipeEnd = {
+        x: event.originalEvent.pageX,
+        y: event.originalEvent.pageY
+      };
+      this.curReqdDirn = Math.atan2(swipeEnd.y - this.swipeStart.y, swipeEnd.x - this.swipeStart.x) * 180 / Math.PI;
+      this.directionCallback(this.curReqdDirn);
+    }
+  };
+
   SpideyGame_PacMan.prototype.mouseMoveTest = function(event) {
     var nodIdx, offs, point, pointIdx, spriteXY, xySpidey;
     offs = $("#spriteOverlay").offset();
@@ -214,7 +282,7 @@ SpideyGame_PacMan = (function(_super) {
     nodIdx = this.spideyWall.getNodeNearXY(xySpidey.x, xySpidey.y);
     pointIdx = this.spideyWall.getPointNearXY(xySpidey.x, xySpidey.y);
     point = this.spideyWall.getPoints()[pointIdx];
-    console.log("X " + xySpidey.x + " Y " + xySpidey.y + " near nodeIdx " + nodIdx + " ptIdx " + pointIdx + " ptNodIdx " + point.nodeIdx + " lnkIdx " + point.linkIdx + " linkStep " + point.linkStep);
+    console.log("X " + Math.floor(xySpidey.x) + " Y " + Math.floor(xySpidey.y) + " near nodeIdx " + nodIdx + " ptIdx " + pointIdx + " ptNodIdx " + point.nodeIdx + " lnkIdx " + point.linkIdx + " linkStep " + point.linkStep);
   };
 
   SpideyGame_PacMan.prototype.mouseDownTest = function(event) {

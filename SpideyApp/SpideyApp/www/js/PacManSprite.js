@@ -24,6 +24,7 @@ PacManSprite = (function() {
     this.spriteSizePx = 25;
     this.isVisible = this.isPacman;
     this.dotsEatenWhenLastSentHome = 0;
+    this.justWrapped = false;
     return;
   }
 
@@ -51,8 +52,8 @@ PacManSprite = (function() {
     this.updateUI();
   };
 
-  PacManSprite.prototype.updateUI = function(gameMode) {
-    var spriteXY, xyPos;
+  PacManSprite.prototype.updateUI = function(gameMode, gameCounter, frightenedInterval) {
+    var colrMod, fillColour, spriteXY, xyPos;
     xyPos = this.getPositionXY();
     if (xyPos != null) {
       spriteXY = this.spideyAppUI.getPositionOfSprite(xyPos);
@@ -61,12 +62,26 @@ PacManSprite = (function() {
         "top": spriteXY.y - this.spriteSizePx / 2 + "px",
         "left": spriteXY.x - this.spriteSizePx / 2 + "px"
       });
-      if (!this.isPacman && (gameMode != null)) {
+      if (!this.isPacman && (gameMode != null) && (gameCounter != null)) {
+        if (gameMode === 'frightened') {
+          if (gameCounter < frightenedInterval * 0.75) {
+            fillColour = "#551A8B";
+          } else {
+            colrMod = ((frightenedInterval - gameCounter) % 10) * 30;
+            fillColour = "#" + (this.toHex(colrMod + 80, 2)) + "1A" + (this.toHex(colrMod + 120, 2));
+          }
+        } else {
+          fillColour = this.colour;
+        }
         $("#sprite_" + this.name + " svg path").css({
-          "fill": gameMode === 'frightened' ? 'purple' : this.colour
+          "fill": fillColour
         });
       }
     }
+  };
+
+  PacManSprite.prototype.toHex = function(val, digits) {
+    return ("00000000" + val.toString(16)).slice(-digits);
   };
 
   PacManSprite.prototype.dist = function(x1, y1, x2, y2) {
@@ -111,22 +126,28 @@ PacManSprite = (function() {
     if (this.curLocation.linkIdx < 0) {
       bestLinkIdx = 0;
       numLinksFromHere = this.spideyWall.getNumLinks(this.curLocation.nodeIdx);
-      if (numLinksFromHere === 1) {
+      if (numLinksFromHere === 1 && !this.justWrapped) {
         this.curLocation.nodeIdx = this.spideyWall.getWrapNodeIdx(this.curLocation.nodeIdx);
-      }
-      nearestAngle = 360;
-      for (linkIdx = _i = 0; 0 <= numLinksFromHere ? _i < numLinksFromHere : _i > numLinksFromHere; linkIdx = 0 <= numLinksFromHere ? ++_i : --_i) {
-        linkAngle = this.spideyWall.getLinkAngle(this.curLocation.nodeIdx, linkIdx, 1);
-        angleDiff = Math.abs(this.userReqdDirection - linkAngle);
-        angleDiff = angleDiff > 180 ? 360 - angleDiff : angleDiff;
-        if (nearestAngle > angleDiff) {
-          nearestAngle = angleDiff;
-          bestLinkIdx = linkIdx;
+        this.curLocation.linkIdx = -1;
+        this.curLocation.linkStep = 0;
+        this.curLocation.stepSize = 1;
+        this.justWrapped = true;
+      } else {
+        nearestAngle = 360;
+        for (linkIdx = _i = 0; 0 <= numLinksFromHere ? _i < numLinksFromHere : _i > numLinksFromHere; linkIdx = 0 <= numLinksFromHere ? ++_i : --_i) {
+          linkAngle = this.spideyWall.getLinkAngle(this.curLocation.nodeIdx, linkIdx, 1);
+          angleDiff = Math.abs(this.userReqdDirection - linkAngle);
+          angleDiff = angleDiff > 180 ? 360 - angleDiff : angleDiff;
+          if (nearestAngle > angleDiff) {
+            nearestAngle = angleDiff;
+            bestLinkIdx = linkIdx;
+          }
         }
+        this.curLocation.linkIdx = bestLinkIdx;
+        this.curLocation.linkStep = 0;
+        this.curLocation.stepSize = 1;
+        this.justWrapped = false;
       }
-      this.curLocation.linkIdx = bestLinkIdx;
-      this.curLocation.linkStep = 0;
-      this.curLocation.stepSize = 1;
       if (this.curLocation.linkIdx !== -1) {
         this.angleOfTravel = this.spideyWall.getLinkAngle(this.curLocation.nodeIdx, this.curLocation.linkIdx, this.curLocation.stepSize);
       }
@@ -146,6 +167,7 @@ PacManSprite = (function() {
         this.curLocation.linkIdx = -1;
         this.curLocation.linkStep = 0;
       }
+      this.justWrapped = false;
     }
   };
 

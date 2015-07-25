@@ -13,6 +13,7 @@ class PacManSprite
 		@spriteSizePx = 25
 		@isVisible = @isPacman
 		@dotsEatenWhenLastSentHome = 0
+		@justWrapped = false
 		return
  
 	showInitially: () ->
@@ -58,20 +59,7 @@ class PacManSprite
 		@updateUI()
 		return
 
-	updateUI: (gameMode) ->
-		# Clear previous
-		# if @oldLocation?
-		# 	if @oldLocation.linkIdx < 0
-		# 		@spideyWall.setNodeColour(@oldLocation.nodeIdx, false, @colour)
-		# 	else
-		# 		@spideyWall.setLinkColour(@oldLocation.nodeIdx, @oldLocation.linkIdx, @oldLocation.linkStep, false, @colour)
-
-		# Show new
-		# if @curLocation.linkIdx < 0
-		# 	@spideyWall.setNodeColour(@curLocation.nodeIdx, true, @colour)
-		# else
-		# 	@spideyWall.setLinkColour(@curLocation.nodeIdx, @curLocation.linkIdx, @curLocation.linkStep, true, @colour)
-		# return
+	updateUI: (gameMode, gameCounter, frightenedInterval) ->
 
 		# Show sprite at location
 		xyPos = @getPositionXY()
@@ -82,18 +70,21 @@ class PacManSprite
 				"visibility": if @isVisible then 'visible' else 'hidden'
 				"top": spriteXY.y - @spriteSizePx/2 + "px"
 				"left": spriteXY.x - @spriteSizePx/2 + "px"
-			if not @isPacman and gameMode?
+			if not @isPacman and gameMode? and gameCounter?
+				if gameMode is 'frightened'
+					if gameCounter < frightenedInterval * 0.75
+						fillColour = "#551A8B"
+					else
+						colrMod = ((frightenedInterval - gameCounter) % 10) * 30
+						fillColour = "##{@toHex(colrMod + 80, 2)}1A#{@toHex(colrMod + 120, 2)}"
+				else
+					fillColour = @colour
 				$("#sprite_#{@name} svg path").css
-					"fill": if gameMode is 'frightened' then 'purple' else @colour
-
-			# canvas = document
-			# 	.getElementById("spideyCanvas")
-			# 	.getContext("2d")
-
-			# canvas.fillStyle = "white"
-			# canvas.fillRect(xyPos.x, xyPos.y, 10, 10)
-
+					"fill": fillColour
 		return
+
+	toHex: (val, digits) ->
+		 return ("00000000" + val.toString(16)).slice(-digits);
 
 	dist: (x1, y1, x2, y2) ->
 		return Math.sqrt(((x2-x1)*(x2-x1)) + ((y2-y1)*(y2-y1)))
@@ -137,28 +128,34 @@ class PacManSprite
 
 			# Check if we're heading off the edge of the map - only 1 link at a node
 			numLinksFromHere = @spideyWall.getNumLinks(@curLocation.nodeIdx)
-			if numLinksFromHere == 1
+			if numLinksFromHere == 1 and not @justWrapped
 				# console.log "heading off the map nodeIdx=" + @curLocation.nodeIdx
 				# Wrap to another node
 				@curLocation.nodeIdx = @spideyWall.getWrapNodeIdx(@curLocation.nodeIdx)
+				@curLocation.linkIdx = -1
+				@curLocation.linkStep = 0
+				@curLocation.stepSize = 1
+				@justWrapped = true
+			else
 
-			# Find the link which most closely approximates the desired angle of travel
-			nearestAngle = 360
-			for linkIdx in [0...numLinksFromHere]
-				# Get link angle ignoring direction we're currently travelling
-				linkAngle = @spideyWall.getLinkAngle(@curLocation.nodeIdx, linkIdx, 1)
-				# Compute difference between required and link angle - again staying within the -180 to +180 range
-				angleDiff = Math.abs(@userReqdDirection-linkAngle)
-				angleDiff = if angleDiff > 180 then 360-angleDiff else angleDiff
-				# console.log "linkIdx" + linkIdx + " linkAngle = " + linkAngle + " diff " + angleDiff
-				# Check whether angle is the best we've got
-				if nearestAngle	> angleDiff
-					nearestAngle = angleDiff
-					bestLinkIdx	= linkIdx
-					# console.log "Best is " + linkIdx
-			@curLocation.linkIdx = bestLinkIdx
-			@curLocation.linkStep = 0
-			@curLocation.stepSize = 1
+				# Find the link which most closely approximates the desired angle of travel
+				nearestAngle = 360
+				for linkIdx in [0...numLinksFromHere]
+					# Get link angle ignoring direction we're currently travelling
+					linkAngle = @spideyWall.getLinkAngle(@curLocation.nodeIdx, linkIdx, 1)
+					# Compute difference between required and link angle - again staying within the -180 to +180 range
+					angleDiff = Math.abs(@userReqdDirection-linkAngle)
+					angleDiff = if angleDiff > 180 then 360-angleDiff else angleDiff
+					# console.log "linkIdx" + linkIdx + " linkAngle = " + linkAngle + " diff " + angleDiff
+					# Check whether angle is the best we've got
+					if nearestAngle	> angleDiff
+						nearestAngle = angleDiff
+						bestLinkIdx	= linkIdx
+						# console.log "Best is " + linkIdx
+				@curLocation.linkIdx = bestLinkIdx
+				@curLocation.linkStep = 0
+				@curLocation.stepSize = 1
+				@justWrapped = false
 			# console.log "At nodeidx " + @curLocation.nodeIdx + "reqd " + @userReqdDirection + " bestLinkIdx " + bestLinkIdx + " angle " + nearestAngle 
 
 			# Set current angle of travel
@@ -192,6 +189,7 @@ class PacManSprite
 					@curLocation.nodeIdx = @spideyWall.getLinkTarget(@curLocation.nodeIdx, @curLocation.linkIdx)
 				@curLocation.linkIdx = -1
 				@curLocation.linkStep = 0
+			@justWrapped = false
 		return
 
 	moveGhost: (gameMode, pacmanChomper, blinkyGhost, dotsEaten) ->
@@ -255,31 +253,6 @@ class PacManSprite
 					distFromPacman = Math.sqrt(Math.pow(pacmanXY.x-ownXY.x,2)+Math.pow(pacmanXY.y-ownXY.y,2))
 					if distFromPacman < @minFollowDist * @spideyWall.getStepDist()
 						targetXY = @spideyWall.getNodeXY(@initialNodeIdx)
-					# 	console.log "Clyde TOO CLOSE"
-					# console.log "dist " + distFromPacman + " min " + @minFollowDist * @spideyWall.getStepDist()
-
-					# console.log "dirn " + pacmanChomper.angleOfTravel + " x " + pacmanXY.x + " " + targetXY.x
-					# console.log "dirn " + pacmanChomper.angleOfTravel + " y " + pacmanXY.y + " " + targetXY.y
-
-					# canvas = document
-					# 	.getElementById("spideyCanvas")
-					# 	.getContext("2d")
-
-					# canvas.fillStyle = "white"
-
-					# canvas.lineWidth = 3
-					# canvas.strokeStyle = "green"
-					# canvas.beginPath()
-					# aXY = @spideyAppUI.getPositionOfSprite(pacmanXY)
-					# canvas.moveTo(aXY.x, aXY.y)
-					# aXY = @spideyAppUI.getPositionOfSprite(targetXY)
-					# canvas.lineTo(aXY.x, aXY.y)
-					# canvas.closePath()
-					# canvas.stroke()
-					# debugger
-					# canvas.fillStyle = "red"
-					# canvas.fillRect(targetXY.x, targetXY.y, 10, 10)
-					# canvas.fillRect(targetXY.x, targetXY.y, 10, 10)
 
 			# Find ghost target location
 			minDist = 100000

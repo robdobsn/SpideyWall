@@ -29,7 +29,7 @@ PacManDots = (function() {
     for (dotIdx = _i = 0, _len = _ref.length; _i < _len; dotIdx = ++_i) {
       dot = _ref[dotIdx];
       dotColor = dot.dotType === 0 ? "white" : "magenta";
-      dotSz = dot.dotType === 0 ? this.dotSize : this.dotSize * 2;
+      dotSz = dot.dotType === 0 ? this.dotSize : this.dotSize * 3;
       dotSzD2 = dotSz / 2;
       dotPoint = points[dotIdx];
       spriteXY = this.spideyAppUI.getPositionOfSprite(dotPoint);
@@ -43,7 +43,6 @@ PacManDots = (function() {
           left: spriteXY.x
         });
       }
-      console.log("pt " + spriteXY.x + " " + spriteXY.y);
     }
   };
 

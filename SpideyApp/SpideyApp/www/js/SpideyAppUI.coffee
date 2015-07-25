@@ -12,24 +12,32 @@ class SpideyAppUI
 		@origBackdropSize =
 			width: 504
 			height: 720
-		# Direction the joystick is pointing
-		@curJoystickDirn = null
-		@curJoystickDist = 0
 		# Handler for orientation change
 		$(window).on 'orientationchange', =>
 		  @rebuildUI()
+		  return
+
 		# And resize event
 		$(window).on 'resize', =>
-		  @rebuildUI()		
+		  @rebuildUI()
+		  return
+
+		 return
 
 	init: (@spideyWall, @restartCallback) ->
 		# CSS for black background
 		$("html").css
 			background: "#000000"
+			"-webkit-touch-callout": "none"
+			"-webkit-user-select": "none"
+			"-khtml-user-select": "none"
+			"-moz-user-select": "none"
+			"-ms-user-select": "none"
+			"user-select": "none"
 		# Basic body for DOM
 		$("#gameArea").remove()
 		$("body").prepend """
-			<div id="gameArea">
+			<div id="gameArea" style="border:0;margin:0;padding:0">
 				<div id="gameScore"
 					style="position: absolute; left: 420px; border: 50px; color:white; z-index: 10; "></div>
 		        <canvas id="spideyCanvas" 
@@ -55,9 +63,10 @@ class SpideyAppUI
 		return
 
 	rebuildUI: =>
+
 		# Scale everything to maximise screen utilisation
-		@dispHeight = window.innerHeight
-		@dispWidth = window.innerWidth
+		@dispHeight = window.innerHeight - 10
+		@dispWidth = window.innerWidth - 10
 		@isLandscape = @dispWidth > @dispHeight
 		origImgRatio = @origBackdropSize.width/@origBackdropSize.height
 		screenRatio = @dispWidth/@dispHeight
@@ -94,6 +103,12 @@ class SpideyAppUI
 			"top": @canvasTop + (0.76*@canvasHeight) + "px"
 			"width": @joystickSize+ "px" 
 			"height": @joystickSize + "px"
+		$("#gameScore").css
+			"left": @canvasLeft + @canvasWidth * 0.70 + "px" 
+			"top": @canvasTop + (0.06*@canvasHeight) + "px"
+			"width": 140 + "px" 
+			"font-size": 50 + "px"
+			"font-family": 'Calligraffitti'
 
 		# Re-show the game backdrop as resizing the canvas clears it
 		@showGameBackdrop()
@@ -138,16 +153,18 @@ class SpideyAppUI
 	setDirectionCallback: (@directionCallback) ->
 		return
 
-	updateJoystickBallUI: () ->
+	updateJoystickBallUI: (joystickDirn, joystickDist) ->
+		if not joystickDist?
+			joystickDist = 100
 		ballSize = @joystickSize/2
 		ballMarginX = @joystickSize / 2 - ballSize/2
 		ballMarginY = @joystickSize / 2 - ballSize/2
 		ballMoveRadius = @joystickSize / 5
 
 		# Add direction of current movement
-		if @curJoystickDirn?
-			dirnInRads = @curJoystickDirn * Math.PI / 180
-			ballOffset = Math.min(@curJoystickDist, ballMoveRadius)
+		if joystickDirn?
+			dirnInRads = joystickDirn * Math.PI / 180
+			ballOffset = Math.min(joystickDist, ballMoveRadius)
 			ballMarginX += Math.cos(dirnInRads) * ballOffset
 			ballMarginY += Math.sin(dirnInRads) * ballOffset
 
@@ -166,10 +183,22 @@ class SpideyAppUI
 		joystickPos = $(".sqJoystick").offset()
 		relX = event.pageX - joystickPos.left
 		relY = event.pageY - joystickPos.top
-		@curJoystickDirn = Math.atan2(relY - ballCentreY, relX - ballCentreX) * 180 / Math.PI
-		@curJoystickDist = Math.sqrt((relY - ballCentreY)*(relY - ballCentreY)+(relX - ballCentreX)*(relX - ballCentreX))
-		@updateJoystickBallUI()
-		@directionCallback(@curJoystickDirn)
+		joystickDirn = Math.atan2(relY - ballCentreY, relX - ballCentreX) * 180 / Math.PI
+		joystickDist = Math.sqrt((relY - ballCentreY)*(relY - ballCentreY)+(relX - ballCentreX)*(relX - ballCentreX))
+		@directionCallback(joystickDirn, joystickDist)
+		return
+
+	touchMoveJoystick: (event) =>
+		event.preventDefault()
+		if event.originalEvent.touches.length is 1
+			pagePos =
+				pageX: event.originalEvent.touches[0].pageX
+				pageY:  event.originalEvent.touches[0].pageY
+			@mouseMoveJoystick(pagePos)
+		return
+
+	touchStartJoystick: (event) =>
+		event.preventDefault()
 		return
 
 	showGameUI: (showIt) ->
@@ -190,11 +219,16 @@ class SpideyAppUI
 			</div>
 			"""
 		$(".sqJoystick").on "mousemove", @mouseMoveJoystick
+		$(".sqJoystick").on "touchstart", @touchStartJoystick
+		$(".sqJoystick").on "touchmove", @touchMoveJoystick
 		return
 
 	showGameBackdrop: () ->
+		# Clear canvas
 		@canvas.fillStyle = "black"
 		@canvas.fillRect(0, 0, @canvasWidth, @canvasHeight)
+
+		# Draw the maze in blue to create the walls
 		@canvas.lineWidth = @canvasHeight / 30
 		for link, linkIdx in @spideyWall.getLinks()
 			@canvas.beginPath()
@@ -203,7 +237,8 @@ class SpideyAppUI
 			@canvas.strokeStyle = "blue"
 			@canvas.stroke()
 			# console.log "xyxy " + link.xSource * @scaleFactorX + " " + link.ySource * @scaleFactorY
-				
+
+		# Draw the maze again in black but this time with narrower lines 
 		@canvas.lineWidth = @canvasHeight / 50
 		for link in @spideyWall.getLinks()
 			@canvas.beginPath()
@@ -212,15 +247,10 @@ class SpideyAppUI
 			@canvas.strokeStyle = "black"
 			@canvas.stroke()
 
-		# nodXY = @spideyWall.getNodeXY(9)
-		# @canvas.fillStyle = "green"
-		# @canvas.fillRect(nodXY.x *  @scaleFactorX, nodXY.y * @scaleFactorY, 5, 5)
-			# for link in @spideyWall.getLinks()
-			# 	@canvas.fillStyle = "green"
-			# 	@canvas.fillRect(link.xSource *  @scaleFactorX, link.ySource * @scaleFactorY, 2, 2)
 		return 
 
 	showGameOver: () ->
+		# Display game-over popup
 		popWid = @canvasWidth/2
 		popHig = @canvasHeight/10
 		popTop = @canvasTop + @canvasHeight/3-popHig/2

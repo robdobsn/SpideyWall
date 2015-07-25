@@ -4,6 +4,8 @@ var SpideyAppUI,
 
 SpideyAppUI = (function() {
   function SpideyAppUI() {
+    this.touchStartJoystick = __bind(this.touchStartJoystick, this);
+    this.touchMoveJoystick = __bind(this.touchMoveJoystick, this);
     this.mouseMoveJoystick = __bind(this.mouseMoveJoystick, this);
     this.rebuildUI = __bind(this.rebuildUI, this);
     this.mediaPlayHelper = new MediaPlayHelper({
@@ -15,28 +17,33 @@ SpideyAppUI = (function() {
       width: 504,
       height: 720
     };
-    this.curJoystickDirn = null;
-    this.curJoystickDist = 0;
     $(window).on('orientationchange', (function(_this) {
       return function() {
-        return _this.rebuildUI();
+        _this.rebuildUI();
       };
     })(this));
     $(window).on('resize', (function(_this) {
       return function() {
-        return _this.rebuildUI();
+        _this.rebuildUI();
       };
     })(this));
+    return;
   }
 
   SpideyAppUI.prototype.init = function(spideyWall, restartCallback) {
     this.spideyWall = spideyWall;
     this.restartCallback = restartCallback;
     $("html").css({
-      background: "#000000"
+      background: "#000000",
+      "-webkit-touch-callout": "none",
+      "-webkit-user-select": "none",
+      "-khtml-user-select": "none",
+      "-moz-user-select": "none",
+      "-ms-user-select": "none",
+      "user-select": "none"
     });
     $("#gameArea").remove();
-    $("body").prepend("<div id=\"gameArea\">\n	<div id=\"gameScore\"\n		style=\"position: absolute; left: 420px; border: 50px; color:white; z-index: 10; \"></div>\n		        <canvas id=\"spideyCanvas\" \n		        	style=\"position: absolute; left: 0px; border: 0px; \"></canvas>\n	<div id=\"spriteOverlay\" \n		        	style=\"position:absolute; ; left: 0px; border: 0px;\">\n	</div>\n	<div id=\"gamebuttons\" style=\"position:absolute;\">\n	</div>\n</div>");
+    $("body").prepend("<div id=\"gameArea\" style=\"border:0;margin:0;padding:0\">\n	<div id=\"gameScore\"\n		style=\"position: absolute; left: 420px; border: 50px; color:white; z-index: 10; \"></div>\n		        <canvas id=\"spideyCanvas\" \n		        	style=\"position: absolute; left: 0px; border: 0px; \"></canvas>\n	<div id=\"spriteOverlay\" \n		        	style=\"position:absolute; ; left: 0px; border: 0px;\">\n	</div>\n	<div id=\"gamebuttons\" style=\"position:absolute;\">\n	</div>\n</div>");
     this.canvas = document.getElementById("spideyCanvas").getContext("2d");
     this.rebuildUI();
   };
@@ -47,8 +54,8 @@ SpideyAppUI = (function() {
 
   SpideyAppUI.prototype.rebuildUI = function() {
     var origImgRatio, scaleHeight, scaleWidth, screenRatio;
-    this.dispHeight = window.innerHeight;
-    this.dispWidth = window.innerWidth;
+    this.dispHeight = window.innerHeight - 10;
+    this.dispWidth = window.innerWidth - 10;
     this.isLandscape = this.dispWidth > this.dispHeight;
     origImgRatio = this.origBackdropSize.width / this.origBackdropSize.height;
     screenRatio = this.dispWidth / this.dispHeight;
@@ -88,6 +95,13 @@ SpideyAppUI = (function() {
       "width": this.joystickSize + "px",
       "height": this.joystickSize + "px"
     });
+    $("#gameScore").css({
+      "left": this.canvasLeft + this.canvasWidth * 0.70 + "px",
+      "top": this.canvasTop + (0.06 * this.canvasHeight) + "px",
+      "width": 140 + "px",
+      "font-size": 50 + "px",
+      "font-family": 'Calligraffitti'
+    });
     this.showGameBackdrop();
     if (this.resizeCallback != null) {
       this.resizeCallback();
@@ -123,15 +137,18 @@ SpideyAppUI = (function() {
     this.directionCallback = directionCallback;
   };
 
-  SpideyAppUI.prototype.updateJoystickBallUI = function() {
+  SpideyAppUI.prototype.updateJoystickBallUI = function(joystickDirn, joystickDist) {
     var ballMarginX, ballMarginY, ballMoveRadius, ballOffset, ballSize, dirnInRads;
+    if (joystickDist == null) {
+      joystickDist = 100;
+    }
     ballSize = this.joystickSize / 2;
     ballMarginX = this.joystickSize / 2 - ballSize / 2;
     ballMarginY = this.joystickSize / 2 - ballSize / 2;
     ballMoveRadius = this.joystickSize / 5;
-    if (this.curJoystickDirn != null) {
-      dirnInRads = this.curJoystickDirn * Math.PI / 180;
-      ballOffset = Math.min(this.curJoystickDist, ballMoveRadius);
+    if (joystickDirn != null) {
+      dirnInRads = joystickDirn * Math.PI / 180;
+      ballOffset = Math.min(joystickDist, ballMoveRadius);
       ballMarginX += Math.cos(dirnInRads) * ballOffset;
       ballMarginY += Math.sin(dirnInRads) * ballOffset;
     }
@@ -144,16 +161,31 @@ SpideyAppUI = (function() {
   };
 
   SpideyAppUI.prototype.mouseMoveJoystick = function(event) {
-    var ballCentreX, ballCentreY, joystickPos, relX, relY;
+    var ballCentreX, ballCentreY, joystickDirn, joystickDist, joystickPos, relX, relY;
     ballCentreX = this.joystickSize / 2;
     ballCentreY = this.joystickSize / 2;
     joystickPos = $(".sqJoystick").offset();
     relX = event.pageX - joystickPos.left;
     relY = event.pageY - joystickPos.top;
-    this.curJoystickDirn = Math.atan2(relY - ballCentreY, relX - ballCentreX) * 180 / Math.PI;
-    this.curJoystickDist = Math.sqrt((relY - ballCentreY) * (relY - ballCentreY) + (relX - ballCentreX) * (relX - ballCentreX));
-    this.updateJoystickBallUI();
-    this.directionCallback(this.curJoystickDirn);
+    joystickDirn = Math.atan2(relY - ballCentreY, relX - ballCentreX) * 180 / Math.PI;
+    joystickDist = Math.sqrt((relY - ballCentreY) * (relY - ballCentreY) + (relX - ballCentreX) * (relX - ballCentreX));
+    this.directionCallback(joystickDirn, joystickDist);
+  };
+
+  SpideyAppUI.prototype.touchMoveJoystick = function(event) {
+    var pagePos;
+    event.preventDefault();
+    if (event.originalEvent.touches.length === 1) {
+      pagePos = {
+        pageX: event.originalEvent.touches[0].pageX,
+        pageY: event.originalEvent.touches[0].pageY
+      };
+      this.mouseMoveJoystick(pagePos);
+    }
+  };
+
+  SpideyAppUI.prototype.touchStartJoystick = function(event) {
+    event.preventDefault();
   };
 
   SpideyAppUI.prototype.showGameUI = function(showIt) {
@@ -165,6 +197,8 @@ SpideyAppUI = (function() {
   SpideyAppUI.prototype.showGamePad = function(tlx, tly) {
     $("#gamebuttons").append("<div class=\"sqJoystick\" style=\"display:block; opacity:1;\">\n	<div class=\"sqJoystickImg\" style=\"position:absolute;\" >\n		<img width=\"100%\" height=\"100%\" src=\"img/joystickbase.png\"></img>\n	</div>\n	<div id=\"sqJoystickBall\" style=\"position:absolute;\" >\n		<img width=\"50%\" height=\"50%\" src=\"img/joystickball.png\" style=\"margin-top:30%;margin-left:31%\"></img>\n	</div>\n</div>");
     $(".sqJoystick").on("mousemove", this.mouseMoveJoystick);
+    $(".sqJoystick").on("touchstart", this.touchStartJoystick);
+    $(".sqJoystick").on("touchmove", this.touchMoveJoystick);
   };
 
   SpideyAppUI.prototype.showGameBackdrop = function() {

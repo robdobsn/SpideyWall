@@ -7,9 +7,12 @@ class SpideyGame_PacMan extends SpideyGame
 		# Location of the ghost house - node the ghosts emerge from
 		@ghostHouseNode = 1
 		@initGame()
+		@gameRunning = false
+		@lastMouseMoveTime = null
 		return
 
 	initGame: () ->
+		# Init
 		@pacmanSprite = new PacManSprite("pacman", 43, 0, 0, "#ffee00", true, 0, @ghostHouseNode, @spideyWall, @spideyAppUI)
 		numDots = @spideyWall.getNumPoints()
 		@ghostSprites = [ 
@@ -29,7 +32,8 @@ class SpideyGame_PacMan extends SpideyGame
 		@spideyAppUI.setResizeCallback(@resizeCallback)
 		@gameMode = 'scatter'
 		@gameCounter = 0
-		@scatterInterval = 50
+		@scatterOnTime = 20
+		@scatterOffTime = 50
 		@frightenedInterval = 200
 		@ghostsEatenScore = 0
 		@initGhostEatScore = 100
@@ -46,15 +50,21 @@ class SpideyGame_PacMan extends SpideyGame
 			ghost.showInitially()
 		@pacmanSprite.showInitially()
 		@pacManDots.showInitially()
-		@gameTimer = setInterval(@step, 150)
+		@gameTimer = setInterval(@step, 100)
 
-		# Test code
-		$("#spriteOverlay").on "mousemove", @mouseMoveTest
-		$("#spriteOverlay").on "mousedown", @mouseDownTest
+		# Events
+		$("#spriteOverlay").on "mousemove", @mouseMove
+		$("#spriteOverlay").on "mousedown", @mouseDown
+		$("body").on "touchstart", @touchStart
+		$("body").on "touchmove", @touchMove
+		$("body").on "touchend", @touchEnd
+		@gameRunning = true
+
 		return
 
 	stop: () ->
 		clearInterval(@gameTimer)
+		@gameRunning = false
 		return
 
 	resizeCallback: () =>
@@ -66,11 +76,12 @@ class SpideyGame_PacMan extends SpideyGame
 
 	updateSprites: ->
 		for ghost in @ghostSprites
-			ghost.updateUI(@gameMode)
+			ghost.updateUI(@gameMode, @gameCounter, @frightenedInterval)
 		@pacmanSprite.updateUI(@gameMode)
 		return
 
 	step: =>
+		inGameMode = @gameMode
 		@pacmanSprite.movePacman()
 		dotType = @pacManDots.beEaten(@pacmanSprite.getPositionPointIdx())
 		if dotType isnt 0
@@ -79,7 +90,6 @@ class SpideyGame_PacMan extends SpideyGame
 				@nextGhostEatScore = @initGhostEatScore
 			@gameMode = 'frightened'
 			@gameCounter = 0
-			console.log 'FRIGHTENED'
 		for ghost in @ghostSprites
 			collision = ghost.moveGhost(@gameMode, @pacmanSprite, @ghostSprites[0], @pacManDots.getDotsEaten())
 			if collision
@@ -95,31 +105,30 @@ class SpideyGame_PacMan extends SpideyGame
 		@gameCounter++
 		if @gameMode is 'frightened'
 			if @gameCounter > @frightenedInterval
-				@gameCounter = 0
 				@gameMode = @prevGameMode
-				console.log @gameMode
-		else
-			if @gameCounter % @scatterInterval is 0
-				if @gameMode is 'scatter'
-					@gameMode = 'chase'
-					console.log "CHASE"
-				else
-					@gameMode = 'scatter'
-					console.log "SCATTER"
 				@gameCounter = 0
+		else
+			if @gameMode is 'scatter'
+				if @gameCounter > @scatterOnTime
+					@gameMode = 'chase'
+					@gameCounter = 0
+			else
+				if @gameCounter > @scatterOffTime
+					@gameMode = 'scatter'
+					@gameCounter = 0
+		# if inGameMode isnt @gameMode
+		# 	console.log "GameModeChanged now " + @gameMode
 		return
 
 	updateScore: () ->
 		curScore = @pacManDots.getDotsEaten() * @scoreForDot
 		curScore += @ghostsEatenScore
 		$("#gameScore").text(curScore.toString())
-
-	directionCallback: (param) =>
-		@changeDirection(param)
 		return
 
-	mouseover: (dirn) ->
-		@changeDirection(dirn)
+	directionCallback: (direction, distance) =>
+		@changeDirection(direction)
+		@spideyAppUI.updateJoystickBallUI(direction, distance)
 		return
 
 	changeDirection: (dirn) ->
@@ -151,6 +160,54 @@ class SpideyGame_PacMan extends SpideyGame
 		clearInterval(@tmr)
 		return
 
+	mouseMove: (event) =>
+		# Check for swipes
+		now = new Date()
+		if @lastMouseMoveTime?
+			if now - @lastMouseMoveTime > 100
+				@swipeStart =
+					x: event.pageX
+					y: event.pageY
+			else
+				swipeEnd = 
+					x: event.originalEvent.pageX
+					y:  event.originalEvent.pageY
+				if @swipeStart? and @spideyWall.dist(@swipeStart,swipeEnd) > 20
+					@curReqdDirn = Math.atan2(swipeEnd.y - @swipeStart.y, swipeEnd.x - @swipeStart.x) * 180 / Math.PI
+					@directionCallback(@curReqdDirn)
+		@lastMouseMoveTime = now
+		# @mouseMoveTest(event)
+		return
+
+	mouseDown: (event) =>
+		# 
+		return
+
+	touchMove: (event) =>
+		if @gameRunning
+			event.preventDefault()
+		return
+
+	touchStart: (event) =>
+		if @gameRunning
+			event.preventDefault()
+			if event.originalEvent.touches.length is 1
+				@swipeStart = 
+					x: event.originalEvent.touches[0].pageX
+					y:  event.originalEvent.touches[0].pageY
+		return
+
+	touchEnd: (event) =>
+		if @gameRunning
+			if not @swipeStart?
+				return
+			swipeEnd = 
+				x: event.originalEvent.pageX
+				y:  event.originalEvent.pageY
+			@curReqdDirn = Math.atan2(swipeEnd.y - @swipeStart.y, swipeEnd.x - @swipeStart.x) * 180 / Math.PI
+			@directionCallback(@curReqdDirn)
+		return
+
 	mouseMoveTest: (event) =>
 		# console.log event.pageX
 		# Find nearest node
@@ -162,7 +219,7 @@ class SpideyGame_PacMan extends SpideyGame
 		nodIdx = @spideyWall.getNodeNearXY(xySpidey.x, xySpidey.y)
 		pointIdx = @spideyWall.getPointNearXY(xySpidey.x, xySpidey.y)
 		point = @spideyWall.getPoints()[pointIdx]
-		console.log "X " + xySpidey.x + " Y " + xySpidey.y + " near nodeIdx " + nodIdx + " ptIdx " + pointIdx + " ptNodIdx " + point.nodeIdx + " lnkIdx " + point.linkIdx + " linkStep " + point.linkStep
+		console.log "X " + Math.floor(xySpidey.x) + " Y " + Math.floor(xySpidey.y) + " near nodeIdx " + nodIdx + " ptIdx " + pointIdx + " ptNodIdx " + point.nodeIdx + " lnkIdx " + point.linkIdx + " linkStep " + point.linkStep
 		return
 
 	mouseDownTest: (event) =>
